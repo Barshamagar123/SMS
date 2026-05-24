@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int             @id @default(autoincrement())
+  email          String          @unique @db.VarChar(255)
+  password       String          @db.VarChar(255)
+  name           String          @db.VarChar(255)
+  phone          String?         @db.VarChar(20)
+  role           RoleEnum
+  status         UserStatus      @default(PENDING)
+  isActive       Boolean         @default(true)
+  isFirstLogin   Boolean         @default(true)
+  failedAttempts Int             @default(0)
+  lockedUntil    DateTime?
+  lastLoginAt    DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  auditLogs      AuditLog[]
+  parent         Parent?
+  passwordResets PasswordReset[]
+  sessions       Session[]
+  student        Student?
+  teacher        Teacher?
+  otps           Otp[]
+  notifications  Notification[]
+
+  @@index([email])
+  @@map("users")
+}
+
+model Student {
+  id         Int    @id @default(autoincrement())
+  rollNumber String @unique @map("roll_number")
+  userId     Int    @unique
+  classId    Int    @map("class_id")
+  class      Class  @relation(fields: [classId], references: [id])
+  user       User   @relation(fields: [userId], references: [id])
+
+  @@index([classId], map: "students_class_id_fkey")
+  @@map("students")
+}
+
+model Teacher {
+  id         Int    @id @default(autoincrement())
+  employeeId String @unique @map("employee_id")
+  userId     Int    @unique
+  user       User   @relation(fields: [userId], references: [id])
+
+  @@map("teachers")
+}
+
+model Parent {
+  id     Int  @id @default(autoincrement())
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id])
+
+  @@map("parents")
+}
+
+model Class {
+  id       Int       @id @default(autoincrement())
+  name     String    @db.VarChar(50)
+  section  String    @db.VarChar(10)
+  students Student[]
+
+  @@map("classes")
+}
+
+model Session {
+  id               String   @id @default(cuid())
+  userId           Int      @map("user_id")
+  refreshToken     String   @unique @map("refresh_token")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  ipAddress        String? 
+  userAgent        String?
+  isValid          Boolean  @default(true)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+
+}
+
+model PasswordReset {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  token     String    @unique @db.VarChar(255)
+  expiresAt DateTime  @map("expires_at")
+  isUsed    Boolean   @default(false) @map("is_used")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([token])
+  @@index([userId])
+  @@map("password_resets")
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?     @map("user_id")
+  action    String   @db.VarChar(100)
+  entity    String?  @db.VarChar(50)
+  entityId  Int?     @map("entity_id")
+  oldValue  Json?    @map("old_value")
+  newValue  Json?    @map("new_value")
+  ipAddress String?  @map("ip_address") @db.VarChar(45)
+  userAgent String?  @map("user_agent")
+  status    String   @default("SUCCESS") @db.VarChar(20)
+  error     String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+enum RoleEnum {
+  ADMIN
+  TEACHER
+  STUDENT
+  PARENT
+  SUPERADMIN
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  REJECTED
+}
+
+enum OtpPurpose {
+  ADMIN_VERIFICATION
+  PASSWORD_RESET
+  MFA
+}
+
+model Otp {
+  id        Int        @id @default(autoincrement())
+  userId    Int        @map("user_id")
+  code      String     @db.VarChar(10)
+  purpose   OtpPurpose
+  expiresAt DateTime   @map("expires_at")
+  isUsed    Boolean    @default(false) @map("is_used")
+  createdAt DateTime   @default(now()) @map("created_at")
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("otps")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  title     String   @db.VarChar(255)
+  message   String   @db.Text
+  userId    Int      @map("user_id")
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("notifications")
+}

@@ -1,0 +1,49 @@
+{
+  "compilerOptions": {
+    /* Language and Environment */
+    "target": "ES2022",
+    "lib": ["ES2022"],
+
+    /* Module System */
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
+    /* Project Structure */
+    "rootDir": "./src",
+    "outDir": "./dist",
+
+    /* Strict Type Safety */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    /* Module Interoperability */
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+
+    /* Utilities */
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+
+    /* Build */
+    "noEmit": false,
+    "sourceMap": true,
+
+    /* Recommended for Large Projects */
+    "incremental": true,
+
+    /* Better Debugging */
+    "declaration": true,
+        "types": ["node"]  // ✅ Add this line
+
+  },
+
+  "include": ["src/**/*", "prisma/**/*"],
+
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts"
+  ]
+}

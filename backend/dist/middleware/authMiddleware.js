@@ -1,20 +1,48 @@
-import jwt from 'jsonwebtoken';
-export const authenticate = (req, res, next) => {
+import { PrismaClient } from '@prisma/client';
+import TokenService from '../services/tokenService.js';
+const prisma = new PrismaClient();
+export const authenticate = async (req, res, next) => {
     const header = req.headers.authorization;
     if (!header || !header.startsWith('Bearer ')) {
         return res.status(401).json({ message: 'No token provided' });
     }
-    const token = header.split(' ')[1];
+    let token = header.split(' ')[1];
+    if (!token) {
+        return res.status(401).json({ message: 'Malformed token' });
+    }
+    // Strip surrounding quotes if present (common copy-paste error from JSON responses)
+    if (token.startsWith('"') && token.endsWith('"')) {
+        token = token.slice(1, -1);
+    }
+    if (token.startsWith("'") && token.endsWith("'")) {
+        token = token.slice(1, -1);
+    }
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = TokenService.verifyAccessToken(token);
+        const user = await prisma.user.findUnique({
+            where: { id: decoded.userId }
+        });
+        if (!user) {
+            return res.status(401).json({ message: 'User no longer exists' });
+        }
+        if (!user.isActive || user.status !== 'ACTIVE') {
+            return res.status(403).json({ message: 'Your account is deactivated or pending approval' });
+        }
         req.user = {
-            id: decoded.userId,
-            role: decoded.role
+            id: user.id,
+            role: user.role
         };
         next();
     }
-    catch {
-        return res.status(401).json({ message: 'Invalid or expired token' });
+    catch (err) {
+        const decodedPayload = TokenService.decodeToken(token);
+        console.error('🔥 JWT Authentication error:', err);
+        console.error('Decoded unverified token payload:', decodedPayload);
+        return res.status(401).json({
+            message: 'Invalid or expired token',
+            error: err.message,
+            decodedPayload
+        });
     }
 };
 // ONLY SUPERADMIN

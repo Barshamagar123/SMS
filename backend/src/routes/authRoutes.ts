@@ -5,6 +5,15 @@ import {
   requireSuperAdmin,
   requireAdmin
 } from '../middleware/authMiddleware.js';
+import {
+  validateLogin,
+  validateRegisterPublic,
+  validateCreateAdmin,
+  validateCreateTeacher,
+  validateApproveUser,
+  validateUpdateUser
+} from '../validations/authValidation.js';
+import { handleValidationErrors } from '../middleware/validationMiddleware.js';
 
 import {
   loginLimiter,
@@ -20,12 +29,16 @@ const router = Router();
 router.post(
   '/login',
   loginLimiter,
+  validateLogin,
+  handleValidationErrors,
   authController.login
 );
 
 // PUBLIC REGISTRATION (STUDENT / PARENT ONLY)
 router.post(
   '/register/public',
+  validateRegisterPublic,
+  handleValidationErrors,
   authController.publicRegister
 );
 
@@ -37,6 +50,8 @@ router.post(
   '/admin/create',
   authenticate,
   requireSuperAdmin,
+  validateCreateAdmin,
+  handleValidationErrors,
   authController.createAdmin
 );
 
@@ -48,6 +63,8 @@ router.post(
   '/teacher/create',
   authenticate,
   requireAdmin,
+  validateCreateTeacher,
+  handleValidationErrors,
   authController.createTeacher
 );
 
@@ -56,6 +73,8 @@ router.post(
   '/users/approve',
   authenticate,
   requireAdmin,
+  validateApproveUser,
+  handleValidationErrors,
   authController.approveOrRejectUser
 );
 
@@ -72,6 +91,8 @@ router.put(
   '/users/:id',
   authenticate,
   requireAdmin,
+  validateUpdateUser,
+  handleValidationErrors,
   authController.updateUser
 );
 

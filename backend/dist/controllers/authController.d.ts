@@ -10,6 +10,11 @@ declare class AuthController {
     getAllUsers: (_req: any, res: Response) => Promise<void>;
     updateUser: (req: any, res: Response) => Promise<void>;
     deleteUser: (req: any, res: Response) => Promise<void>;
+    logout: (req: AuthenticatedRequest, res: Response) => Promise<void>;
+    refresh: (req: any, res: Response) => Promise<void>;
+    forgotPassword: (req: any, res: Response) => Promise<void>;
+    resetPassword: (req: any, res: Response) => Promise<void>;
+    changePassword: (req: AuthenticatedRequest, res: Response) => Promise<void>;
 }
 declare const _default: AuthController;
 export default _default;

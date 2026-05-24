@@ -1,16 +1,47 @@
+// ================= authService.ts =================
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import TokenService from './tokenService.js';
 const prisma = new PrismaClient();
 export default class AuthService {
     // ================= LOGIN =================
     static async login(email, password) {
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user)
+        const user = await prisma.user.findUnique({
+            where: { email }
+        });
+        if (!user) {
             throw new Error('Invalid credentials');
+        }
+        // account locked
+        if (user.lockedUntil &&
+            user.lockedUntil > new Date()) {
+            throw new Error('Account temporarily locked');
+        }
         const match = await bcrypt.compare(password, user.password);
-        if (!match)
+        // wrong password
+        if (!match) {
+            await prisma.user.update({
+                where: { id: user.id },
+                data: {
+                    failedAttempts: user.failedAttempts + 1,
+                    lockedUntil: user.failedAttempts + 1 >= 5
+                        ? new Date(Date.now() +
+                            15 * 60 * 1000)
+                        : null
+                }
+            });
             throw new Error('Invalid credentials');
+        }
+        // reset failed attempts
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                failedAttempts: 0,
+                lockedUntil: null,
+                lastLoginAt: new Date()
+            }
+        });
         const accessToken = TokenService.generateAccessToken(user);
         const refreshToken = TokenService.generateRefreshToken(user);
         await prisma.session.create({
@@ -20,34 +51,40 @@ export default class AuthService {
                 isValid: true
             }
         });
-        return { user, accessToken, refreshToken };
+        return {
+            user,
+            accessToken,
+            refreshToken
+        };
     }
-    // ================= SUPERADMIN → CREATE ADMIN =================
+    // ================= CREATE ADMIN =================
     static async createAdmin(data, creatorId) {
-        // 1. check duplicate email
         const exists = await prisma.user.findUnique({
-            where: { email: data.email }
+            where: {
+                email: data.email
+            }
         });
         if (exists) {
             throw new Error('Email already exists');
         }
         const hashed = await bcrypt.hash(data.password, 10);
-        // 2. CREATE ADMIN (ROLE FIXED HERE)
         return prisma.user.create({
             data: {
                 email: data.email,
                 password: hashed,
                 name: data.name,
-                role: 'ADMIN', // 🔥 FIXED BY SYSTEM
+                role: 'ADMIN',
                 status: 'ACTIVE',
                 isActive: true
             }
         });
     }
-    // ================= ADMIN → CREATE TEACHER =================
+    // ================= CREATE TEACHER =================
     static async createTeacher(data, adminId) {
         const exists = await prisma.user.findUnique({
-            where: { email: data.email }
+            where: {
+                email: data.email
+            }
         });
         if (exists) {
             throw new Error('Email already exists');
@@ -63,7 +100,6 @@ export default class AuthService {
                 isActive: true
             }
         });
-        // create teacher profile
         await prisma.teacher.create({
             data: {
                 userId: user.id,
@@ -74,13 +110,17 @@ export default class AuthService {
     }
     // ================= PUBLIC REGISTER =================
     static async publicRegister(data) {
-        // ❌ SECURITY FIX: role must NOT be trusted from frontend
-        const allowedRoles = ['STUDENT', 'PARENT'];
+        const allowedRoles = [
+            'STUDENT',
+            'PARENT'
+        ];
         if (!allowedRoles.includes(data.role)) {
             throw new Error('Invalid role');
         }
         const exists = await prisma.user.findUnique({
-            where: { email: data.email }
+            where: {
+                email: data.email
+            }
         });
         if (exists) {
             throw new Error('Email already exists');
@@ -100,22 +140,30 @@ export default class AuthService {
     // ================= APPROVE / REJECT =================
     static async approveOrRejectUser(userId, action) {
         return prisma.user.update({
-            where: { id: userId },
+            where: {
+                id: userId
+            },
             data: {
-                status: action === 'APPROVE' ? 'ACTIVE' : 'REJECTED'
+                status: action === 'APPROVE'
+                    ? 'ACTIVE'
+                    : 'REJECTED'
             }
         });
     }
     // ================= GET ME =================
     static async getMe(userId) {
         return prisma.user.findUnique({
-            where: { id: userId }
+            where: {
+                id: userId
+            }
         });
     }
     // ================= GET ALL USERS =================
     static async getAllUsers() {
         return prisma.user.findMany({
-            orderBy: { createdAt: 'desc' }
+            orderBy: {
+                createdAt: 'desc'
+            }
         });
     }
     // ================= UPDATE USER =================
@@ -127,8 +175,116 @@ export default class AuthService {
     }
     // ================= DELETE USER =================
     static async deleteUser(id) {
-        return prisma.user.delete({
-            where: { id }
+        return prisma.user.update({
+            where: { id },
+            data: {
+                isActive: false
+            }
+        });
+    }
+    // ================= LOGOUT =================
+    static async logout(refreshToken) {
+        await prisma.session.updateMany({
+            where: {
+                refreshToken
+            },
+            data: {
+                isValid: false
+            }
+        });
+    }
+    // ================= REFRESH TOKEN =================
+    static async refresh(refreshToken) {
+        const session = await prisma.session.findFirst({
+            where: {
+                refreshToken,
+                isValid: true
+            },
+            include: {
+                user: true
+            }
+        });
+        if (!session) {
+            throw new Error('Invalid refresh token');
+        }
+        const accessToken = TokenService.generateAccessToken(session.user);
+        return { accessToken };
+    }
+    // ================= FORGOT PASSWORD =================
+    static async forgotPassword(email) {
+        const user = await prisma.user.findUnique({
+            where: { email }
+        });
+        if (!user) {
+            throw new Error('User not found');
+        }
+        const token = crypto.randomBytes(32)
+            .toString('hex');
+        const expiresAt = new Date(Date.now() +
+            15 * 60 * 1000);
+        await prisma.passwordReset.create({
+            data: {
+                userId: user.id,
+                token,
+                expiresAt
+            }
+        });
+        return { token };
+    }
+    // ================= RESET PASSWORD =================
+    static async resetPassword(token, newPassword) {
+        const reset = await prisma.passwordReset.findFirst({
+            where: {
+                token,
+                isUsed: false
+            }
+        });
+        if (!reset) {
+            throw new Error('Invalid reset token');
+        }
+        if (reset.expiresAt < new Date()) {
+            throw new Error('Reset token expired');
+        }
+        const hashed = await bcrypt.hash(newPassword, 10);
+        await prisma.user.update({
+            where: {
+                id: reset.userId
+            },
+            data: {
+                password: hashed
+            }
+        });
+        await prisma.passwordReset.update({
+            where: {
+                id: reset.id
+            },
+            data: {
+                isUsed: true,
+                usedAt: new Date()
+            }
+        });
+    }
+    // ================= CHANGE PASSWORD =================
+    static async changePassword(userId, currentPassword, newPassword) {
+        const user = await prisma.user.findUnique({
+            where: { id: userId }
+        });
+        if (!user) {
+            throw new Error('User not found');
+        }
+        const match = await bcrypt.compare(currentPassword, user.password);
+        if (!match) {
+            throw new Error('Current password incorrect');
+        }
+        const hashed = await bcrypt.hash(newPassword, 10);
+        await prisma.user.update({
+            where: {
+                id: userId
+            },
+            data: {
+                password: hashed,
+                isFirstLogin: false
+            }
         });
     }
 }

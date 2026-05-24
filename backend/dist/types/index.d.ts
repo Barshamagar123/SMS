@@ -4,6 +4,8 @@ export interface AuthenticatedRequest extends Request {
     user?: {
         id: number;
         role: RoleEnum;
+        name: string;
+        email?: string;
     };
 }
 export interface ApiResponse<T = any> {

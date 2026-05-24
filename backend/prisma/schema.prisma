@@ -52,6 +52,7 @@ model Teacher {
   employeeId String @unique @map("employee_id")
   userId     Int    @unique
   user       User   @relation(fields: [userId], references: [id])
+  teacherAssignments TeacherAssignment[]  // ✅ ADD THIS LINE
 
   @@map("teachers")
 }
@@ -69,6 +70,8 @@ model Class {
   name     String    @db.VarChar(50)
   section  String    @db.VarChar(10)
   students Student[]
+  classSubjects  ClassSubject[]     // Subjects taught in this class
+  @@unique([name, section])
 
   @@map("classes")
 }
@@ -170,4 +173,70 @@ model Notification {
 
   @@index([userId])
   @@map("notifications")
+}
+// ============================================
+// CLASS & SUBJECT MANAGEMENT MODELS (NEW)
+
+
+model Subject {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(100)     // "Mathematics", "English"
+  code        String    @unique @db.VarChar(20)  // "MATH101", "ENG101"
+  description String?   @db.Text
+  isActive    Boolean   @default(true)       @map("is_active")
+  createdAt   DateTime  @default(now())      @map("created_at")
+  updatedAt   DateTime  @updatedAt           @map("updated_at")
+  
+  // Relationships
+  classSubjects    ClassSubject[]
+  
+  @@map("subjects")
+}
+
+model ClassSubject {
+  id          Int       @id @default(autoincrement())
+  classId     Int       @map("class_id")
+  subjectId   Int       @map("subject_id")
+  isActive    Boolean   @default(true)       @map("is_active")
+  createdAt   DateTime  @default(now())      @map("created_at")
+  
+  // Relationships
+  class              Class              @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subject            Subject            @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacherAssignments TeacherAssignment[]
+  
+  @@unique([classId, subjectId])
+  @@map("class_subjects")
+}
+
+model AcademicYear {
+  id          Int       @id @default(autoincrement())
+  year        String    @unique @db.VarChar(20)     // "2024-2025"
+  isActive    Boolean   @default(false)             @map("is_active")
+  startDate   DateTime  @map("start_date")
+  endDate     DateTime  @map("end_date")
+  createdAt   DateTime  @default(now())              @map("created_at")
+  
+  // Relationships
+  teacherAssignments TeacherAssignment[]
+  
+  @@map("academic_years")
+}
+
+model TeacherAssignment {
+  id               Int       @id @default(autoincrement())
+  teacherId        Int       @map("teacher_id")
+  classSubjectId   Int       @map("class_subject_id")
+  academicYearId   Int       @map("academic_year_id")
+  isPrimary        Boolean   @default(true)      @map("is_primary")
+  createdAt        DateTime  @default(now())     @map("created_at")
+  updatedAt        DateTime  @updatedAt          @map("updated_at")
+  
+  // Relationships
+  teacher          Teacher          @relation(fields: [teacherId], references: [id])
+  classSubject     ClassSubject     @relation(fields: [classSubjectId], references: [id])
+  academicYear     AcademicYear     @relation(fields: [academicYearId], references: [id])
+  
+  @@unique([teacherId, classSubjectId, academicYearId])
+  @@map("teacher_assignments")
 }

@@ -89,7 +89,7 @@ class AuthController {
             });
         }
     };
-    // ================= ME =================
+    // ================= GET CURRENT USER =================
     getMe = async (req, res) => {
         try {
             const data = await AuthService.getMe(req.user.id);
@@ -106,7 +106,7 @@ class AuthController {
             });
         }
     };
-    // ================= ALL USERS =================
+    // ================= GET ALL USERS =================
     getAllUsers = async (_req, res) => {
         try {
             const data = await AuthService.getAllUsers();
@@ -147,6 +147,91 @@ class AuthController {
             res.json({
                 success: true,
                 message: "User deleted successfully"
+            });
+        }
+        catch (err) {
+            res.status(400).json({
+                success: false,
+                message: err.message
+            });
+        }
+    };
+    // ================= LOGOUT =================
+    logout = async (req, res) => {
+        try {
+            const { refreshToken } = req.body;
+            await AuthService.logout(refreshToken);
+            res.json({
+                success: true,
+                message: "Logged out successfully"
+            });
+        }
+        catch (err) {
+            res.status(400).json({
+                success: false,
+                message: err.message
+            });
+        }
+    };
+    // ================= REFRESH TOKEN =================
+    refresh = async (req, res) => {
+        try {
+            const { refreshToken } = req.body;
+            const data = await AuthService.refresh(refreshToken);
+            res.json({
+                success: true,
+                data
+            });
+        }
+        catch (err) {
+            res.status(400).json({
+                success: false,
+                message: err.message
+            });
+        }
+    };
+    // ================= FORGOT PASSWORD =================
+    forgotPassword = async (req, res) => {
+        try {
+            const data = await AuthService.forgotPassword(req.body.email);
+            res.json({
+                success: true,
+                message: "Password reset token generated",
+                data
+            });
+        }
+        catch (err) {
+            res.status(400).json({
+                success: false,
+                message: err.message
+            });
+        }
+    };
+    // ================= RESET PASSWORD =================
+    resetPassword = async (req, res) => {
+        try {
+            const { token, newPassword } = req.body;
+            await AuthService.resetPassword(token, newPassword);
+            res.json({
+                success: true,
+                message: "Password reset successful"
+            });
+        }
+        catch (err) {
+            res.status(400).json({
+                success: false,
+                message: err.message
+            });
+        }
+    };
+    // ================= CHANGE PASSWORD =================
+    changePassword = async (req, res) => {
+        try {
+            const { currentPassword, newPassword } = req.body;
+            await AuthService.changePassword(req.user.id, currentPassword, newPassword);
+            res.json({
+                success: true,
+                message: "Password changed successfully"
             });
         }
         catch (err) {

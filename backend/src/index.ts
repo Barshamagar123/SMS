@@ -6,7 +6,11 @@ import cors from 'cors';
 import helmet from 'helmet';
 
 import authRoutes from './routes/authRoutes.js';
-import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'; // ✅ FIXED: Import from correct file
+import classRoutes from './routes/classRoutes.js';
+import subjectRoutes from './routes/subjectRoutes.js';
+import teacherAssignmentRoutes from './routes/teacherAssignmentRoutes.js';
+
+import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { globalLimiter } from './middleware/rateLimitMiddleware.js';
 import { PrismaClient } from '@prisma/client';
 
@@ -29,6 +33,9 @@ app.use('/api', globalLimiter);
 
 // ==================== ROUTES ====================
 app.use('/api/auth', authRoutes);
+app.use('/api/classes', classRoutes);
+app.use('/api/subjects', subjectRoutes);
+app.use('/api/teacher-assignments', teacherAssignmentRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -40,10 +47,10 @@ app.get('/health', (req, res) => {
 });
 
 // 404 handler
-app.use(notFoundHandler); // ✅ FIXED: Use the notFoundHandler
+app.use(notFoundHandler);
 
 // Global error handler
-app.use(errorHandler); // ✅ FIXED: No need for 'as any'
+app.use(errorHandler);
 
 // ==================== START SERVER ====================
 async function startServer() {
@@ -55,7 +62,10 @@ async function startServer() {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🔗 API URL: http://localhost:${PORT}/api`);
-      console.log(`🔐 Auth endpoint: http://localhost:${PORT}/api/auth/login`);
+      console.log(`🔐 Auth:              http://localhost:${PORT}/api/auth`);
+      console.log(`📚 Subjects:          http://localhost:${PORT}/api/subjects`);
+      console.log(`🏫 Classes:           http://localhost:${PORT}/api/classes`);
+      console.log(`👩‍🏫 TeacherAssignments: http://localhost:${PORT}/api/teacher-assignments`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);

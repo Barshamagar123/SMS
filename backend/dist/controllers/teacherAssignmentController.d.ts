@@ -1,0 +1,15 @@
+import { Response } from 'express';
+import { AuthenticatedRequest } from '../types/index.js';
+export declare const assignTeacherToSubject: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const getAllAssignments: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const deleteAssignment: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const getTeacherClasses: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const createAcademicYear: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const getAllAcademicYears: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const getActiveAcademicYear: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const getAcademicYearById: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const updateAcademicYear: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const setActiveYear: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const deleteAcademicYear: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const getAssignmentsByAcademicYear: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const getCurrentYearAssignments: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;

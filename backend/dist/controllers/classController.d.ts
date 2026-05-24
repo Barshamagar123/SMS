@@ -1,0 +1,10 @@
+import { Response } from 'express';
+import { AuthenticatedRequest } from '../types/index.js';
+export declare const createClass: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const getAllClasses: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const getClassById: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const updateClass: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const deleteClass: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const getSubjectsForClass: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const assignSubjectToClass: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const removeSubjectFromClass: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;

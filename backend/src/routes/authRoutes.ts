@@ -1,10 +1,16 @@
+// ================= authRoutes.ts =================
+
 import { Router } from 'express';
-import authController from '../controllers/authController.js';
+
+import authController
+from '../controllers/authController.js';
+
 import {
   authenticate,
   requireSuperAdmin,
   requireAdmin
 } from '../middleware/authMiddleware.js';
+
 import {
   validateLogin,
   validateRegisterPublic,
@@ -13,11 +19,13 @@ import {
   validateApproveUser,
   validateUpdateUser
 } from '../validations/authValidation.js';
-import { handleValidationErrors } from '../middleware/validationMiddleware.js';
 
 import {
-  loginLimiter,
+  handleValidationErrors
+} from '../middleware/validationMiddleware.js';
 
+import {
+  loginLimiter
 } from '../middleware/rateLimitMiddleware.js';
 
 const router = Router();
@@ -25,7 +33,7 @@ const router = Router();
 
 // ========================= PUBLIC ROUTES =========================
 
-// LOGIN (ALL USERS)
+// LOGIN
 router.post(
   '/login',
   loginLimiter,
@@ -34,7 +42,8 @@ router.post(
   authController.login
 );
 
-// PUBLIC REGISTRATION (STUDENT / PARENT ONLY)
+
+// PUBLIC REGISTER
 router.post(
   '/register/public',
   validateRegisterPublic,
@@ -43,9 +52,30 @@ router.post(
 );
 
 
-// ========================= SUPERADMIN ONLY =========================
+// FORGOT PASSWORD
+router.post(
+  '/forgot-password',
+  authController.forgotPassword
+);
 
-// CREATE ADMIN (ONLY SUPERADMIN)
+
+// RESET PASSWORD
+router.post(
+  '/reset-password',
+  authController.resetPassword
+);
+
+
+// REFRESH TOKEN
+router.post(
+  '/refresh',
+  authController.refresh
+);
+
+
+// ========================= SUPERADMIN =========================
+
+// CREATE ADMIN
 router.post(
   '/admin/create',
   authenticate,
@@ -56,7 +86,7 @@ router.post(
 );
 
 
-// ========================= ADMIN ONLY =========================
+// ========================= ADMIN =========================
 
 // CREATE TEACHER
 router.post(
@@ -68,7 +98,8 @@ router.post(
   authController.createTeacher
 );
 
-// APPROVE / REJECT USERS
+
+// APPROVE USER
 router.post(
   '/users/approve',
   authenticate,
@@ -78,13 +109,15 @@ router.post(
   authController.approveOrRejectUser
 );
 
-// GET ALL USERS
+
+// GET USERS
 router.get(
   '/users',
   authenticate,
   requireAdmin,
   authController.getAllUsers
 );
+
 
 // UPDATE USER
 router.put(
@@ -95,6 +128,7 @@ router.put(
   handleValidationErrors,
   authController.updateUser
 );
+
 
 // DELETE USER
 router.delete(
@@ -107,11 +141,27 @@ router.delete(
 
 // ========================= AUTH USER =========================
 
-// CURRENT USER PROFILE
+// GET CURRENT USER
 router.get(
   '/me',
   authenticate,
   authController.getMe
+);
+
+
+// LOGOUT
+router.post(
+  '/logout',
+  authenticate,
+  authController.logout
+);
+
+
+// CHANGE PASSWORD
+router.post(
+  '/change-password',
+  authenticate,
+  authController.changePassword
 );
 
 export default router;

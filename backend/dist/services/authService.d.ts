@@ -59,6 +59,107 @@ export default class AuthService {
         class: string;
         defaultPassword: string;
     }>;
+    static getStudentById(studentId: number): Promise<({
+        user: {
+            id: number;
+            email: string;
+            password: string;
+            name: string;
+            phone: string | null;
+            role: import("@prisma/client").$Enums.RoleEnum;
+            status: import("@prisma/client").$Enums.UserStatus;
+            isActive: boolean;
+            isFirstLogin: boolean;
+            failedAttempts: number;
+            lockedUntil: Date | null;
+            lastLoginAt: Date | null;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        class: {
+            id: number;
+            name: string;
+            section: string;
+        };
+    } & {
+        id: number;
+        phone: string | null;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date | null;
+        userId: number;
+        rollNumber: string;
+        dateOfBirth: Date | null;
+        gender: import("@prisma/client").$Enums.Gender | null;
+        bloodGroup: string | null;
+        nationality: string | null;
+        religion: string | null;
+        address: string | null;
+        city: string | null;
+        state: string | null;
+        fatherName: string | null;
+        motherName: string | null;
+        parentPhone: string | null;
+        parentEmail: string | null;
+        admissionDate: Date;
+        previousSchool: string | null;
+        previousClass: string | null;
+        profilePhoto: string | null;
+        classId: number;
+    }) | null>;
+    static getClassById(classId: number): Promise<{
+        id: number;
+        name: string;
+        section: string;
+    } | null>;
+    static transferStudent(studentId: number, newClassId: number, reason: string | null, transferredBy: number): Promise<{
+        user: {
+            id: number;
+            email: string;
+            password: string;
+            name: string;
+            phone: string | null;
+            role: import("@prisma/client").$Enums.RoleEnum;
+            status: import("@prisma/client").$Enums.UserStatus;
+            isActive: boolean;
+            isFirstLogin: boolean;
+            failedAttempts: number;
+            lockedUntil: Date | null;
+            lastLoginAt: Date | null;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        class: {
+            id: number;
+            name: string;
+            section: string;
+        };
+    } & {
+        id: number;
+        phone: string | null;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date | null;
+        userId: number;
+        rollNumber: string;
+        dateOfBirth: Date | null;
+        gender: import("@prisma/client").$Enums.Gender | null;
+        bloodGroup: string | null;
+        nationality: string | null;
+        religion: string | null;
+        address: string | null;
+        city: string | null;
+        state: string | null;
+        fatherName: string | null;
+        motherName: string | null;
+        parentPhone: string | null;
+        parentEmail: string | null;
+        admissionDate: Date;
+        previousSchool: string | null;
+        previousClass: string | null;
+        profilePhoto: string | null;
+        classId: number;
+    }>;
     static publicRegister(data: any): Promise<{
         id: number;
         email: string;

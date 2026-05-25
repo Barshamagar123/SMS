@@ -197,6 +197,43 @@ export default class AuthService {
     };
   }
 
+  // ================= TRANSFER STUDENT METHODS =================
+  
+  // Get student by ID with class details
+  static async getStudentById(studentId: number) {
+    return prisma.student.findUnique({
+      where: { id: studentId },
+      include: {
+        class: true,
+        user: true
+      }
+    });
+  }
+
+  // Get class by ID
+  static async getClassById(classId: number) {
+    return prisma.class.findUnique({
+      where: { id: classId }
+    });
+  }
+
+  // Transfer student to new class
+  static async transferStudent(
+    studentId: number,
+    newClassId: number,
+    reason: string | null,
+    transferredBy: number
+  ) {
+    return prisma.student.update({
+      where: { id: studentId },
+      data: { classId: newClassId },
+      include: {
+        user: true,
+        class: true
+      }
+    });
+  }
+
   // ================= PUBLIC REGISTER (BLOCK STUDENTS) =================
   static async publicRegister(data: any) {
     if (data.role === 'STUDENT') {
@@ -466,6 +503,7 @@ export default class AuthService {
         address: data.address !== undefined ? data.address : student.address,
         city: data.city !== undefined ? data.city : student.city,
         state: data.state !== undefined ? data.state : student.state,
+       
       }
     });
 

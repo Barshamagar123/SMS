@@ -164,6 +164,34 @@ export default class AuthService {
             defaultPassword: defaultPassword
         };
     }
+    // ================= TRANSFER STUDENT METHODS =================
+    // Get student by ID with class details
+    static async getStudentById(studentId) {
+        return prisma.student.findUnique({
+            where: { id: studentId },
+            include: {
+                class: true,
+                user: true
+            }
+        });
+    }
+    // Get class by ID
+    static async getClassById(classId) {
+        return prisma.class.findUnique({
+            where: { id: classId }
+        });
+    }
+    // Transfer student to new class
+    static async transferStudent(studentId, newClassId, reason, transferredBy) {
+        return prisma.student.update({
+            where: { id: studentId },
+            data: { classId: newClassId },
+            include: {
+                user: true,
+                class: true
+            }
+        });
+    }
     // ================= PUBLIC REGISTER (BLOCK STUDENTS) =================
     static async publicRegister(data) {
         if (data.role === 'STUDENT') {

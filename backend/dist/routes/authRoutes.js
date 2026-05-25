@@ -25,6 +25,8 @@ router.post('/admin/create', authenticate, requireSuperAdmin, validateCreateAdmi
 router.post('/teacher/create', authenticate, requireAdmin, validateCreateTeacher, handleValidationErrors, authController.createTeacher);
 // CREATE STUDENT
 router.post('/student/create', authenticate, requireAdmin, validateCreateStudent, handleValidationErrors, authController.createStudent);
+// TRANSFER STUDENT (Admin only)
+router.post('/students/:id/transfer', authenticate, requireAdmin, authController.transferStudent);
 // APPROVE USER (for parent registrations)
 router.post('/users/approve', authenticate, requireAdmin, validateApproveUser, handleValidationErrors, authController.approveOrRejectUser);
 // GET ALL USERS

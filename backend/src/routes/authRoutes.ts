@@ -82,6 +82,14 @@ router.post(
   authController.createStudent
 );
 
+// TRANSFER STUDENT (Admin only)
+router.post(
+  '/students/:id/transfer',
+  authenticate,
+  requireAdmin,
+  authController.transferStudent
+);
+
 // APPROVE USER (for parent registrations)
 router.post(
   '/users/approve',

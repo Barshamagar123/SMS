@@ -7,6 +7,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 // Export multer middleware for photo upload
 export const uploadPhoto = uploadStudentPhoto.single('photo');
+// Helper function to safely convert params to number
+const toInt = (val) => {
+    if (!val)
+        return NaN;
+    return parseInt(val, 10);
+};
 class AuthController {
     // ================= LOGIN =================
     login = async (req, res) => {
@@ -103,7 +109,7 @@ class AuthController {
             });
         }
     };
-    // ================= ADMIN → CREATE STUDENT (ALL FIELDS REQUIRED - NO NULLS) =================
+    // ================= ADMIN → CREATE STUDENT =================
     createStudent = async (req, res) => {
         try {
             const { email, name, classId, dateOfBirth, gender, fatherName, motherName, parentPhone, address, city, state, pincode, bloodGroup, phone, parentEmail, nationality, religion, admissionDate, previousSchool, previousClass } = req.body;
@@ -220,7 +226,77 @@ class AuthController {
             });
         }
     };
-    // ================= PUBLIC REGISTER (DISABLED FOR STUDENTS) =================
+    // ================= ADMIN: TRANSFER STUDENT TO ANOTHER CLASS =================
+    transferStudent = async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { newClassId, reason } = req.body;
+            // Validate required fields
+            if (!newClassId) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'newClassId is required'
+                });
+            }
+            // ✅ FIX: Use toInt helper to safely convert
+            const studentId = toInt(id);
+            const newClassIdNum = toInt(newClassId);
+            if (isNaN(studentId) || isNaN(newClassIdNum)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid student ID or class ID'
+                });
+            }
+            // Get student with current class
+            const student = await AuthService.getStudentById(studentId);
+            if (!student) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Student not found'
+                });
+            }
+            // Get new class
+            const newClass = await AuthService.getClassById(newClassIdNum);
+            if (!newClass) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'New class not found'
+                });
+            }
+            // Check if already in same class
+            if (student.classId === newClassIdNum) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Student is already in this class'
+                });
+            }
+            const oldClassName = `${student.class.name} ${student.class.section}`;
+            const newClassName = `${newClass.name} ${newClass.section}`;
+            // Transfer student
+            const transferredStudent = await AuthService.transferStudent(studentId, newClassIdNum, reason || null, req.user.id);
+            return res.status(200).json({
+                success: true,
+                message: `Student transferred from ${oldClassName} to ${newClassName}`,
+                data: {
+                    studentId: transferredStudent.id,
+                    name: transferredStudent.user.name,
+                    rollNumber: transferredStudent.rollNumber,
+                    oldClass: oldClassName,
+                    newClass: newClassName,
+                    transferredAt: new Date().toISOString(),
+                    reason: reason || null
+                },
+                timestamp: new Date().toISOString()
+            });
+        }
+        catch (err) {
+            res.status(400).json({
+                success: false,
+                message: err.message
+            });
+        }
+    };
+    // ================= PUBLIC REGISTER =================
     publicRegister = async (req, res) => {
         try {
             const { email, password, name, role } = req.body;
@@ -539,8 +615,7 @@ class AuthController {
                     parentPhone: student.parentPhone,
                     parentEmail: student.parentEmail,
                     admissionDate: student.admissionDate,
-                    profilePhoto: student.profilePhoto,
-                    profilePhotoUrl: student.profilePhoto ? `${req.protocol}://${req.get('host')}${student.profilePhoto}` : null
+                    profilePhoto: student.profilePhoto ? `/uploads/students/${student.profilePhoto.split('/').pop()}` : null
                 }
             });
         }
@@ -552,7 +627,7 @@ class AuthController {
             });
         }
     };
-    // ================= STUDENT: UPDATE OWN PROFILE (Limited fields) =================
+    // ================= STUDENT: UPDATE OWN PROFILE =================
     updateOwnProfile = async (req, res) => {
         try {
             const user = req.user;
@@ -589,7 +664,7 @@ class AuthController {
             });
         }
     };
-    // ================= STUDENT: UPLOAD OWN PROFILE PHOTO =================
+    // ================= STUDENT: UPLOAD PROFILE PHOTO =================
     uploadOwnProfilePhoto = async (req, res) => {
         try {
             const user = req.user;
@@ -632,7 +707,7 @@ class AuthController {
                 message: 'Profile photo uploaded successfully',
                 data: {
                     profilePhoto: updatedStudent.profilePhoto,
-                    photoUrl: `${req.protocol}://${req.get('host')}${photoUrl}`
+                    fileUrl: `${req.protocol}://${req.get('host')}${photoUrl}`
                 }
             });
         }
@@ -644,7 +719,7 @@ class AuthController {
             });
         }
     };
-    // ================= STUDENT: GET OWN PROFILE PHOTO =================
+    // ================= STUDENT: GET PROFILE PHOTO =================
     getOwnProfilePhoto = async (req, res) => {
         try {
             const user = req.user;
@@ -678,7 +753,7 @@ class AuthController {
             });
         }
     };
-    // ================= STUDENT: DELETE OWN PROFILE PHOTO =================
+    // ================= STUDENT: DELETE PROFILE PHOTO =================
     deleteOwnProfilePhoto = async (req, res) => {
         try {
             const user = req.user;

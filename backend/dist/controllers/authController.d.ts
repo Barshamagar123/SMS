@@ -6,6 +6,7 @@ declare class AuthController {
     createAdmin: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
     createTeacher: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
     createStudent: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+    transferStudent: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
     publicRegister: (req: any, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
     approveOrRejectUser: (req: any, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
     getMe: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;

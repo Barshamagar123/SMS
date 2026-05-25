@@ -40,10 +40,43 @@ model Student {
   rollNumber String @unique @map("roll_number")
   userId     Int    @unique
   classId    Int    @map("class_id")
+
+// Personal Details
+  dateOfBirth   DateTime?  @map("date_of_birth")
+  gender        Gender?    
+  bloodGroup    String?    @map("blood_group") @db.VarChar(5)
+  nationality   String?    @default("Indian") @db.VarChar(50)
+  religion      String?    @db.VarChar(50)
+  
+
+// Contact Details
+  address       String?    @db.Text
+  city          String?    @db.VarChar(100)
+  state         String?    @db.VarChar(100)
+  phone         String?    @db.VarChar(20)  // Student's own phone
+  
+    // Parent/Guardian Details
+  fatherName    String?    @map("father_name") @db.VarChar(255)
+  motherName    String?    @map("mother_name") @db.VarChar(255)
+  parentPhone   String?    @map("parent_phone") @db.VarChar(20)
+  parentEmail   String?    @map("parent_email") @db.VarChar(255)
+ // Academic Information
+  admissionDate DateTime   @default(now()) @map("admission_date")
+  previousSchool String?   @map("previous_school") @db.VarChar(255)
+  previousClass  String?   @map("previous_class") @db.VarChar(50)
+    // Documents
+  profilePhoto  String?    @map("profile_photo") @db.VarChar(255)
+  
+  // Status
+  isActive      Boolean    @default(true) @map("is_active")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime?   @updatedAt @map("updated_at")
   class      Class  @relation(fields: [classId], references: [id])
   user       User   @relation(fields: [userId], references: [id])
 
   @@index([classId], map: "students_class_id_fkey")
+
+  @@index([rollNumber])
   @@map("students")
 }
 
@@ -239,4 +272,9 @@ model TeacherAssignment {
   
   @@unique([teacherId, classSubjectId, academicYearId])
   @@map("teacher_assignments")
+}
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
 }

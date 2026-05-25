@@ -1,35 +1,24 @@
-// ================= authRoutes.ts =================
-
 import { Router } from 'express';
-
-import authController
-from '../controllers/authController.js';
-
+import authController from '../controllers/authController.js';
+import { uploadPhoto } from '../controllers/authController.js';
 import {
   authenticate,
   requireSuperAdmin,
   requireAdmin
 } from '../middleware/authMiddleware.js';
-
 import {
   validateLogin,
   validateRegisterPublic,
   validateCreateAdmin,
   validateCreateTeacher,
+  validateCreateStudent,
   validateApproveUser,
   validateUpdateUser
 } from '../validations/authValidation.js';
-
-import {
-  handleValidationErrors
-} from '../middleware/validationMiddleware.js';
-
-import {
-  loginLimiter
-} from '../middleware/rateLimitMiddleware.js';
+import { handleValidationErrors } from '../middleware/validationMiddleware.js';
+import { loginLimiter } from '../middleware/rateLimitMiddleware.js';
 
 const router = Router();
-
 
 // ========================= PUBLIC ROUTES =========================
 
@@ -42,8 +31,7 @@ router.post(
   authController.login
 );
 
-
-// PUBLIC REGISTER
+// PUBLIC REGISTER (Only PARENT allowed)
 router.post(
   '/register/public',
   validateRegisterPublic,
@@ -51,29 +39,16 @@ router.post(
   authController.publicRegister
 );
 
-
 // FORGOT PASSWORD
-router.post(
-  '/forgot-password',
-  authController.forgotPassword
-);
-
+router.post('/forgot-password', authController.forgotPassword);
 
 // RESET PASSWORD
-router.post(
-  '/reset-password',
-  authController.resetPassword
-);
-
+router.post('/reset-password', authController.resetPassword);
 
 // REFRESH TOKEN
-router.post(
-  '/refresh',
-  authController.refresh
-);
+router.post('/refresh', authController.refresh);
 
-
-// ========================= SUPERADMIN =========================
+// ========================= SUPERADMIN ONLY =========================
 
 // CREATE ADMIN
 router.post(
@@ -85,8 +60,7 @@ router.post(
   authController.createAdmin
 );
 
-
-// ========================= ADMIN =========================
+// ========================= ADMIN ONLY =========================
 
 // CREATE TEACHER
 router.post(
@@ -98,8 +72,17 @@ router.post(
   authController.createTeacher
 );
 
+// CREATE STUDENT
+router.post(
+  '/student/create',
+  authenticate,
+  requireAdmin,
+  validateCreateStudent,
+  handleValidationErrors,
+  authController.createStudent
+);
 
-// APPROVE USER
+// APPROVE USER (for parent registrations)
 router.post(
   '/users/approve',
   authenticate,
@@ -109,15 +92,8 @@ router.post(
   authController.approveOrRejectUser
 );
 
-
-// GET USERS
-router.get(
-  '/users',
-  authenticate,
-  requireAdmin,
-  authController.getAllUsers
-);
-
+// GET ALL USERS
+router.get('/users', authenticate, requireAdmin, authController.getAllUsers);
 
 // UPDATE USER
 router.put(
@@ -129,39 +105,35 @@ router.put(
   authController.updateUser
 );
 
-
 // DELETE USER
-router.delete(
-  '/users/:id',
-  authenticate,
-  requireAdmin,
-  authController.deleteUser
-);
+router.delete('/users/:id', authenticate, requireAdmin, authController.deleteUser);
 
+// ========================= STUDENT SELF ROUTES =========================
 
-// ========================= AUTH USER =========================
+// Get own full profile
+router.get('/me/profile', authenticate, authController.getOwnProfile);
 
-// GET CURRENT USER
-router.get(
-  '/me',
-  authenticate,
-  authController.getMe
-);
+// Update own profile (limited fields)
+router.put('/me/profile', authenticate, authController.updateOwnProfile);
 
+// Upload profile photo
+router.post('/me/photo', authenticate, uploadPhoto, authController.uploadOwnProfilePhoto);
+
+// Get profile photo
+router.get('/me/photo', authenticate, authController.getOwnProfilePhoto);
+
+// Delete profile photo
+router.delete('/me/photo', authenticate, authController.deleteOwnProfilePhoto);
+
+// ========================= AUTHENTICATED USER =========================
+
+// GET CURRENT USER (Basic info)
+router.get('/me', authenticate, authController.getMe);
 
 // LOGOUT
-router.post(
-  '/logout',
-  authenticate,
-  authController.logout
-);
-
+router.post('/logout', authenticate, authController.logout);
 
 // CHANGE PASSWORD
-router.post(
-  '/change-password',
-  authenticate,
-  authController.changePassword
-);
+router.post('/change-password', authenticate, authController.changePassword);
 
 export default router;

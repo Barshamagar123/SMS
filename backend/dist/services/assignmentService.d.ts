@@ -23,9 +23,9 @@ export declare class AssignmentService {
             name: string;
             isActive: boolean;
             createdAt: Date;
+            updatedAt: Date;
             code: string;
             description: string | null;
-            updatedAt: Date;
         };
         academicYear: string;
         isPrimary: boolean;
@@ -49,9 +49,9 @@ export declare class AssignmentService {
             name: string;
             isActive: boolean;
             createdAt: Date;
+            updatedAt: Date;
             code: string;
             description: string | null;
-            updatedAt: Date;
         };
         academicYear: string;
         isPrimary: boolean;

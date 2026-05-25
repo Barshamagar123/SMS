@@ -13,27 +13,22 @@ export default class AuthService {
         if (!user) {
             throw new Error('Invalid credentials');
         }
-        // account locked
-        if (user.lockedUntil &&
-            user.lockedUntil > new Date()) {
+        if (user.lockedUntil && user.lockedUntil > new Date()) {
             throw new Error('Account temporarily locked');
         }
         const match = await bcrypt.compare(password, user.password);
-        // wrong password
         if (!match) {
             await prisma.user.update({
                 where: { id: user.id },
                 data: {
                     failedAttempts: user.failedAttempts + 1,
                     lockedUntil: user.failedAttempts + 1 >= 5
-                        ? new Date(Date.now() +
-                            15 * 60 * 1000)
+                        ? new Date(Date.now() + 15 * 60 * 1000)
                         : null
                 }
             });
             throw new Error('Invalid credentials');
         }
-        // reset failed attempts
         await prisma.user.update({
             where: { id: user.id },
             data: {
@@ -51,18 +46,12 @@ export default class AuthService {
                 isValid: true
             }
         });
-        return {
-            user,
-            accessToken,
-            refreshToken
-        };
+        return { user, accessToken, refreshToken };
     }
     // ================= CREATE ADMIN =================
     static async createAdmin(data, creatorId) {
         const exists = await prisma.user.findUnique({
-            where: {
-                email: data.email
-            }
+            where: { email: data.email }
         });
         if (exists) {
             throw new Error('Email already exists');
@@ -82,9 +71,7 @@ export default class AuthService {
     // ================= CREATE TEACHER =================
     static async createTeacher(data, adminId) {
         const exists = await prisma.user.findUnique({
-            where: {
-                email: data.email
-            }
+            where: { email: data.email }
         });
         if (exists) {
             throw new Error('Email already exists');
@@ -108,25 +95,92 @@ export default class AuthService {
         });
         return user;
     }
-    // ================= PUBLIC REGISTER =================
+    // ================= CREATE STUDENT (ADMIN ONLY) =================
+    static async createStudent(data, adminId) {
+        const exists = await prisma.user.findUnique({
+            where: { email: data.email }
+        });
+        if (exists) {
+            throw new Error('Email already exists');
+        }
+        const classExists = await prisma.class.findUnique({
+            where: { id: data.classId }
+        });
+        if (!classExists) {
+            throw new Error('Class not found');
+        }
+        const year = new Date().getFullYear();
+        const studentCount = await prisma.student.count();
+        const sequence = String(studentCount + 1).padStart(6, '0');
+        const rollNumber = `STU${year}${sequence}`;
+        const defaultPassword = `Student@${rollNumber.slice(-6)}`;
+        const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+        const user = await prisma.user.create({
+            data: {
+                email: data.email,
+                password: hashedPassword,
+                name: data.name,
+                role: 'STUDENT',
+                status: 'ACTIVE',
+                isActive: true,
+                isFirstLogin: true,
+                phone: data.phone || null
+            }
+        });
+        const student = await prisma.student.create({
+            data: {
+                rollNumber: rollNumber,
+                userId: user.id,
+                classId: data.classId,
+                dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
+                gender: data.gender || null,
+                bloodGroup: data.bloodGroup || null,
+                nationality: data.nationality || 'Indian',
+                religion: data.religion || null,
+                address: data.address || null,
+                city: data.city || null,
+                state: data.state || null,
+                phone: data.phone || null,
+                fatherName: data.fatherName || null,
+                motherName: data.motherName || null,
+                parentPhone: data.parentPhone || null,
+                parentEmail: data.parentEmail || null,
+                admissionDate: data.admissionDate ? new Date(data.admissionDate) : new Date(),
+                previousSchool: data.previousSchool || null,
+                previousClass: data.previousClass || null,
+                profilePhoto: data.profilePhoto || null
+            },
+            include: {
+                class: true,
+                user: true
+            }
+        });
+        return {
+            id: student.id,
+            rollNumber: student.rollNumber,
+            name: student.user.name,
+            email: student.user.email,
+            class: `${student.class.name} ${student.class.section}`,
+            defaultPassword: defaultPassword
+        };
+    }
+    // ================= PUBLIC REGISTER (BLOCK STUDENTS) =================
     static async publicRegister(data) {
-        const allowedRoles = [
-            'STUDENT',
-            'PARENT'
-        ];
+        if (data.role === 'STUDENT') {
+            throw new Error('Student registration is not allowed publicly. Please contact school admin.');
+        }
+        const allowedRoles = ['PARENT'];
         if (!allowedRoles.includes(data.role)) {
-            throw new Error('Invalid role');
+            throw new Error('Invalid role for public registration');
         }
         const exists = await prisma.user.findUnique({
-            where: {
-                email: data.email
-            }
+            where: { email: data.email }
         });
         if (exists) {
             throw new Error('Email already exists');
         }
         const hashed = await bcrypt.hash(data.password, 10);
-        return prisma.user.create({
+        const user = await prisma.user.create({
             data: {
                 email: data.email,
                 password: hashed,
@@ -136,34 +190,52 @@ export default class AuthService {
                 isActive: true
             }
         });
+        if (data.role === 'PARENT') {
+            await prisma.parent.create({
+                data: { userId: user.id }
+            });
+        }
+        return user;
     }
     // ================= APPROVE / REJECT =================
     static async approveOrRejectUser(userId, action) {
         return prisma.user.update({
-            where: {
-                id: userId
-            },
+            where: { id: userId },
             data: {
-                status: action === 'APPROVE'
-                    ? 'ACTIVE'
-                    : 'REJECTED'
+                status: action === 'APPROVE' ? 'ACTIVE' : 'REJECTED'
             }
         });
     }
     // ================= GET ME =================
     static async getMe(userId) {
-        return prisma.user.findUnique({
-            where: {
-                id: userId
-            }
+        const user = await prisma.user.findUnique({
+            where: { id: userId }
         });
+        if (user?.role === 'STUDENT') {
+            const student = await prisma.student.findUnique({
+                where: { userId: user.id },
+                include: { class: true }
+            });
+            return { ...user, student };
+        }
+        if (user?.role === 'TEACHER') {
+            const teacher = await prisma.teacher.findUnique({
+                where: { userId: user.id }
+            });
+            return { ...user, teacher };
+        }
+        if (user?.role === 'PARENT') {
+            const parent = await prisma.parent.findUnique({
+                where: { userId: user.id }
+            });
+            return { ...user, parent };
+        }
+        return user;
     }
     // ================= GET ALL USERS =================
     static async getAllUsers() {
         return prisma.user.findMany({
-            orderBy: {
-                createdAt: 'desc'
-            }
+            orderBy: { createdAt: 'desc' }
         });
     }
     // ================= UPDATE USER =================
@@ -177,20 +249,14 @@ export default class AuthService {
     static async deleteUser(id) {
         return prisma.user.update({
             where: { id },
-            data: {
-                isActive: false
-            }
+            data: { isActive: false }
         });
     }
     // ================= LOGOUT =================
     static async logout(refreshToken) {
         await prisma.session.updateMany({
-            where: {
-                refreshToken
-            },
-            data: {
-                isValid: false
-            }
+            where: { refreshToken },
+            data: { isValid: false }
         });
     }
     // ================= REFRESH TOKEN =================
@@ -200,9 +266,7 @@ export default class AuthService {
                 refreshToken,
                 isValid: true
             },
-            include: {
-                user: true
-            }
+            include: { user: true }
         });
         if (!session) {
             throw new Error('Invalid refresh token');
@@ -218,10 +282,8 @@ export default class AuthService {
         if (!user) {
             throw new Error('User not found');
         }
-        const token = crypto.randomBytes(32)
-            .toString('hex');
-        const expiresAt = new Date(Date.now() +
-            15 * 60 * 1000);
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
         await prisma.passwordReset.create({
             data: {
                 userId: user.id,
@@ -247,17 +309,11 @@ export default class AuthService {
         }
         const hashed = await bcrypt.hash(newPassword, 10);
         await prisma.user.update({
-            where: {
-                id: reset.userId
-            },
-            data: {
-                password: hashed
-            }
+            where: { id: reset.userId },
+            data: { password: hashed }
         });
         await prisma.passwordReset.update({
-            where: {
-                id: reset.id
-            },
+            where: { id: reset.id },
             data: {
                 isUsed: true,
                 usedAt: new Date()
@@ -278,14 +334,65 @@ export default class AuthService {
         }
         const hashed = await bcrypt.hash(newPassword, 10);
         await prisma.user.update({
-            where: {
-                id: userId
-            },
+            where: { id: userId },
             data: {
                 password: hashed,
                 isFirstLogin: false
             }
         });
     }
+    // ================= STUDENT PROFILE METHODS =================
+    // Get student by user ID
+    static async getStudentByUserId(userId) {
+        return prisma.student.findUnique({
+            where: { userId }
+        });
+    }
+    // Get student with full details (including user and class)
+    static async getStudentWithDetails(userId) {
+        return prisma.student.findUnique({
+            where: { userId },
+            include: {
+                user: true,
+                class: true
+            }
+        });
+    }
+    // Update student profile photo
+    static async updateStudentPhoto(studentId, photoUrl) {
+        return prisma.student.update({
+            where: { id: studentId },
+            data: { profilePhoto: photoUrl }
+        });
+    }
+    // Update student profile (limited fields)
+    static async updateStudentProfile(userId, data) {
+        // First find student by userId
+        const student = await prisma.student.findUnique({
+            where: { userId }
+        });
+        if (!student) {
+            throw new Error('Student not found');
+        }
+        // Update student
+        const updatedStudent = await prisma.student.update({
+            where: { id: student.id },
+            data: {
+                phone: data.phone !== undefined ? data.phone : student.phone,
+                address: data.address !== undefined ? data.address : student.address,
+                city: data.city !== undefined ? data.city : student.city,
+                state: data.state !== undefined ? data.state : student.state,
+            }
+        });
+        // Update phone in User table if provided
+        if (data.phone) {
+            await prisma.user.update({
+                where: { id: userId },
+                data: { phone: data.phone }
+            });
+        }
+        return updatedStudent;
+    }
 }
+// No duplicate export default here - it's already at the top
 //# sourceMappingURL=authService.js.map

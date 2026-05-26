@@ -20,7 +20,6 @@ export const validateCreateAdmin = [
 // ================= CREATE TEACHER VALIDATION =================
 export const validateCreateTeacher = [
     body('email').isEmail().withMessage('Valid email is required'),
-    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
     body('name').notEmpty().withMessage('Name is required')
 ];
 // ================= CREATE STUDENT VALIDATION =================

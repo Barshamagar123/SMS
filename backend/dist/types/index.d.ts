@@ -14,3 +14,11 @@ export interface ApiResponse<T = any> {
     data?: T;
     timestamp: string;
 }
+export interface AttendanceInput {
+    studentId: number;
+    remark?: string;
+}
+export interface MarkAttendanceInput {
+    date: string;
+    attendances: AttendanceInput[];
+}

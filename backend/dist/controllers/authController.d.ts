@@ -1,10 +1,19 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../types/index.js';
-export declare const uploadPhoto: import("express").RequestHandler<import("express-serve-static-core").ParamsDictionary, any, any, import("qs").ParsedQs, Record<string, any>>;
+export declare const uploadStudentPhotoMiddleware: import("express").RequestHandler<import("express-serve-static-core").ParamsDictionary, any, any, import("qs").ParsedQs, Record<string, any>>;
+export declare const uploadTeacherPhotoMiddleware: import("express").RequestHandler<import("express-serve-static-core").ParamsDictionary, any, any, import("qs").ParsedQs, Record<string, any>>;
 declare class AuthController {
     login: (req: any, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
     createAdmin: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
     createTeacher: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+    getAllTeachers: (req: AuthenticatedRequest, res: Response) => Promise<void>;
+    getTeacherById: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+    updateTeacher: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+    deleteTeacher: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+    getOwnTeacherProfile: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+    uploadTeacherProfilePhoto: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+    getTeacherProfilePhoto: (req: AuthenticatedRequest, res: Response) => Promise<void | Response<any, Record<string, any>>>;
+    deleteTeacherProfilePhoto: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
     createStudent: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
     transferStudent: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
     publicRegister: (req: any, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;

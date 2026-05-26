@@ -75,7 +75,9 @@ model Student {
   user       User   @relation(fields: [userId], references: [id])
 
   @@index([classId], map: "students_class_id_fkey")
-
+// ✅ ADD THESE RELATIONS
+  attendances        Attendance[]
+  attendanceSummaries AttendanceSummary[]
   @@index([rollNumber])
   @@map("students")
 }
@@ -86,7 +88,18 @@ model Teacher {
   userId     Int    @unique
   user       User   @relation(fields: [userId], references: [id])
   teacherAssignments TeacherAssignment[]  // ✅ ADD THIS LINE
+  profilePhoto    String?   @map("profile_photo") @db.VarChar(255)
+  // ========== REQUIRED FIELDS ==========
+  qualification   String?   @db.VarChar(255)      // B.Ed, M.Ed, PhD, etc.
+  specialization  String?   @db.VarChar(255)      // Mathematics, Science, English
+  phone           String?   @db.VarChar(20)
+  address         String?   @db.Text
+  hireDate        DateTime? @map("hire_date")
 
+    // Status
+  isActive        Boolean   @default(true) @map("is_active")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime?  @updatedAt @map("updated_at")
   @@map("teachers")
 }
 
@@ -103,7 +116,8 @@ model Class {
   name     String    @db.VarChar(50)
   section  String    @db.VarChar(10)
   students Student[]
-  classSubjects  ClassSubject[]     // Subjects taught in this class
+  classSubjects  ClassSubject[]  // Subjects taught in this class
+    attendances      Attendance[]   
   @@unique([name, section])
 
   @@map("classes")
@@ -252,7 +266,8 @@ model AcademicYear {
   
   // Relationships
   teacherAssignments TeacherAssignment[]
-  
+    attendanceSummaries AttendanceSummary[]
+
   @@map("academic_years")
 }
 
@@ -277,4 +292,56 @@ enum Gender {
   MALE
   FEMALE
   OTHER
+}
+// ============================================
+// ATTENDANCE MANAGEMENT MODELS
+// ============================================
+
+// ============================================
+// ATTENDANCE MANAGEMENT MODELS
+// ============================================
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+}
+
+model Attendance {
+  id        Int              @id @default(autoincrement())
+  studentId Int              @map("student_id")
+  classId   Int              @map("class_id")
+  date      DateTime
+  status    AttendanceStatus
+  remark    String?          @db.Text
+  markedBy  Int              @map("marked_by")
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+  
+  // Relationships
+  student   Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  class     Class            @relation(fields: [classId], references: [id])
+  
+  @@unique([studentId, date])
+  @@index([classId])
+  @@index([date])
+  @@index([studentId])
+  @@map("attendances")
+}
+
+model AttendanceSummary {
+  id             Int      @id @default(autoincrement())
+  studentId      Int      @map("student_id")
+  academicYearId Int      @map("academic_year_id")
+  totalDays      Int      @default(0) @map("total_days")
+  presentDays    Int      @default(0) @map("present_days")
+  absentDays     Int      @default(0) @map("absent_days")
+  percentage     Float    @default(0)
+  updatedAt      DateTime @default(now()) @map("updated_at")
+  
+  // Relationships
+  student      Student      @relation(fields: [studentId], references: [id])
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+  
+  @@unique([studentId, academicYearId])
+  @@map("attendance_summaries")
 }

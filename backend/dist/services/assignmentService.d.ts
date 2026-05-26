@@ -20,10 +20,10 @@ export declare class AssignmentService {
         };
         subject: {
             id: number;
-            name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
+            name: string;
             code: string;
             description: string | null;
         };
@@ -46,10 +46,10 @@ export declare class AssignmentService {
         };
         subject: {
             id: number;
-            name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
+            name: string;
             code: string;
             description: string | null;
         };

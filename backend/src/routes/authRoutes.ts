@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import authController from '../controllers/authController.js';
-import { uploadPhoto } from '../controllers/authController.js';
+import { uploadStudentPhotoMiddleware, uploadTeacherPhotoMiddleware } from '../controllers/authController.js';
 import {
   authenticate,
   requireSuperAdmin,
@@ -60,7 +60,38 @@ router.post(
   authController.createAdmin
 );
 
-// ========================= ADMIN ONLY =========================
+// ========================= TEACHER SELF ROUTES (SPECIFIC - MUST COME FIRST) =========================
+
+// Get own teacher profile
+router.get(
+  '/teachers/me',
+  authenticate,
+  authController.getOwnTeacherProfile
+);
+
+// Upload teacher profile photo
+router.post(
+  '/teachers/me/photo',
+  authenticate,
+  uploadTeacherPhotoMiddleware,
+  authController.uploadTeacherProfilePhoto
+);
+
+// Get teacher profile photo
+router.get(
+  '/teachers/me/photo',
+  authenticate,
+  authController.getTeacherProfilePhoto
+);
+
+// Delete teacher profile photo
+router.delete(
+  '/teachers/me/photo',
+  authenticate,
+  authController.deleteTeacherProfilePhoto
+);
+
+// ========================= ADMIN ONLY (PARAMETER ROUTES - MUST COME AFTER SPECIFIC) =========================
 
 // CREATE TEACHER
 router.post(
@@ -70,6 +101,38 @@ router.post(
   validateCreateTeacher,
   handleValidationErrors,
   authController.createTeacher
+);
+
+// GET ALL TEACHERS
+router.get(
+  '/teachers',
+  authenticate,
+  requireAdmin,
+  authController.getAllTeachers
+);
+
+// GET TEACHER BY ID (This will NOT catch /teachers/me because it comes after)
+router.get(
+  '/teachers/:id',
+  authenticate,
+  requireAdmin,
+  authController.getTeacherById
+);
+
+// UPDATE TEACHER
+router.put(
+  '/teachers/:id',
+  authenticate,
+  requireAdmin,
+  authController.updateTeacher
+);
+
+// DELETE TEACHER
+router.delete(
+  '/teachers/:id',
+  authenticate,
+  requireAdmin,
+  authController.deleteTeacher
 );
 
 // CREATE STUDENT
@@ -125,7 +188,7 @@ router.get('/me/profile', authenticate, authController.getOwnProfile);
 router.put('/me/profile', authenticate, authController.updateOwnProfile);
 
 // Upload profile photo
-router.post('/me/photo', authenticate, uploadPhoto, authController.uploadOwnProfilePhoto);
+router.post('/me/photo', authenticate, uploadStudentPhotoMiddleware, authController.uploadOwnProfilePhoto);
 
 // Get profile photo
 router.get('/me/photo', authenticate, authController.getOwnProfilePhoto);

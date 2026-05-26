@@ -2,7 +2,12 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import TokenService from './tokenService.js';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const prisma = new PrismaClient();
 export default class AuthService {
     // ================= LOGIN =================
@@ -76,7 +81,16 @@ export default class AuthService {
         if (exists) {
             throw new Error('Email already exists');
         }
-        const hashed = await bcrypt.hash(data.password, 10);
+        // Validate required fields
+        const requiredFields = ['email', 'name', 'qualification', 'specialization', 'phone', 'address', 'hireDate'];
+        const missingFields = requiredFields.filter(field => !data[field]);
+        if (missingFields.length > 0) {
+            throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+        }
+        // Generate default password
+        const defaultPassword = `Teacher@${Math.random().toString(36).slice(-6)}`;
+        const hashed = await bcrypt.hash(defaultPassword, 10);
+        // Create User account
         const user = await prisma.user.create({
             data: {
                 email: data.email,
@@ -84,16 +98,317 @@ export default class AuthService {
                 name: data.name,
                 role: 'TEACHER',
                 status: 'ACTIVE',
-                isActive: true
+                isActive: true,
+                isFirstLogin: true,
+                phone: data.phone
             }
         });
-        await prisma.teacher.create({
+        // Generate Employee ID (TCH20250001 format)
+        const year = new Date().getFullYear();
+        const teacherCount = await prisma.teacher.count();
+        const sequence = String(teacherCount + 1).padStart(4, '0');
+        const employeeId = `TCH${year}${sequence}`;
+        // Create Teacher profile
+        const teacher = await prisma.teacher.create({
             data: {
                 userId: user.id,
-                employeeId: `EMP-${Date.now()}`
+                employeeId: employeeId,
+                qualification: data.qualification,
+                specialization: data.specialization,
+                phone: data.phone,
+                address: data.address,
+                hireDate: new Date(data.hireDate)
+            },
+            include: {
+                user: true
             }
         });
-        return user;
+        return {
+            id: teacher.id,
+            employeeId: teacher.employeeId,
+            name: teacher.user.name,
+            email: teacher.user.email,
+            phone: teacher.user.phone,
+            qualification: teacher.qualification,
+            specialization: teacher.specialization,
+            address: teacher.address,
+            hireDate: teacher.hireDate,
+            defaultPassword: defaultPassword
+        };
+    }
+    // ================= ADMIN: GET ALL TEACHERS =================
+    static async getAllTeachers() {
+        const teachers = await prisma.teacher.findMany({
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        phone: true,
+                        isActive: true
+                    }
+                },
+                teacherAssignments: {
+                    include: {
+                        classSubject: {
+                            include: {
+                                class: true,
+                                subject: true
+                            }
+                        },
+                        academicYear: true
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+        return teachers.map(teacher => ({
+            id: teacher.id,
+            employeeId: teacher.employeeId,
+            name: teacher.user.name,
+            email: teacher.user.email,
+            phone: teacher.user.phone,
+            qualification: teacher.qualification,
+            specialization: teacher.specialization,
+            address: teacher.address,
+            hireDate: teacher.hireDate,
+            profilePhoto: teacher.profilePhoto,
+            isActive: teacher.user.isActive,
+            assignmentsCount: teacher.teacherAssignments.length,
+            assignments: teacher.teacherAssignments.map(ta => ({
+                class: `${ta.classSubject.class.name} ${ta.classSubject.class.section}`,
+                subject: ta.classSubject.subject.name,
+                academicYear: ta.academicYear.year,
+                isPrimary: ta.isPrimary
+            }))
+        }));
+    }
+    // ================= ADMIN: GET TEACHER BY ID =================
+    static async getTeacherById(teacherId) {
+        const teacher = await prisma.teacher.findUnique({
+            where: { id: teacherId },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        phone: true,
+                        isActive: true
+                    }
+                },
+                teacherAssignments: {
+                    include: {
+                        classSubject: {
+                            include: {
+                                class: true,
+                                subject: true
+                            }
+                        },
+                        academicYear: true
+                    }
+                }
+            }
+        });
+        if (!teacher) {
+            throw new Error('Teacher not found');
+        }
+        return {
+            id: teacher.id,
+            employeeId: teacher.employeeId,
+            name: teacher.user.name,
+            email: teacher.user.email,
+            phone: teacher.user.phone,
+            qualification: teacher.qualification,
+            specialization: teacher.specialization,
+            address: teacher.address,
+            hireDate: teacher.hireDate,
+            profilePhoto: teacher.profilePhoto,
+            isActive: teacher.user.isActive,
+            assignments: teacher.teacherAssignments.map(ta => ({
+                class: `${ta.classSubject.class.name} ${ta.classSubject.class.section}`,
+                subject: ta.classSubject.subject.name,
+                academicYear: ta.academicYear.year,
+                isPrimary: ta.isPrimary
+            }))
+        };
+    }
+    // ================= ADMIN: UPDATE TEACHER =================
+    static async updateTeacher(teacherId, data, adminId) {
+        const teacher = await prisma.teacher.findUnique({
+            where: { id: teacherId },
+            include: { user: true }
+        });
+        if (!teacher) {
+            throw new Error('Teacher not found');
+        }
+        // Update User
+        if (data.name || data.email || data.phone || data.isActive !== undefined) {
+            await prisma.user.update({
+                where: { id: teacher.userId },
+                data: {
+                    name: data.name || teacher.user.name,
+                    email: data.email || teacher.user.email,
+                    phone: data.phone !== undefined ? data.phone : teacher.user.phone,
+                    isActive: data.isActive !== undefined ? data.isActive : teacher.user.isActive
+                }
+            });
+        }
+        // Update Teacher
+        const updatedTeacher = await prisma.teacher.update({
+            where: { id: teacherId },
+            data: {
+                qualification: data.qualification !== undefined ? data.qualification : teacher.qualification,
+                specialization: data.specialization !== undefined ? data.specialization : teacher.specialization,
+                address: data.address !== undefined ? data.address : teacher.address,
+                hireDate: data.hireDate ? new Date(data.hireDate) : teacher.hireDate
+            },
+            include: { user: true }
+        });
+        return {
+            id: updatedTeacher.id,
+            employeeId: updatedTeacher.employeeId,
+            name: updatedTeacher.user.name,
+            email: updatedTeacher.user.email,
+            phone: updatedTeacher.user.phone,
+            qualification: updatedTeacher.qualification,
+            specialization: updatedTeacher.specialization,
+            address: updatedTeacher.address,
+            hireDate: updatedTeacher.hireDate,
+            isActive: updatedTeacher.user.isActive
+        };
+    }
+    // ================= ADMIN: DELETE TEACHER =================
+    static async deleteTeacher(teacherId) {
+        const teacher = await prisma.teacher.findUnique({
+            where: { id: teacherId },
+            include: { user: true }
+        });
+        if (!teacher) {
+            throw new Error('Teacher not found');
+        }
+        // Soft delete - deactivate user
+        await prisma.user.update({
+            where: { id: teacher.userId },
+            data: { isActive: false }
+        });
+        return { success: true, teacherName: teacher.user.name };
+    }
+    // ================= TEACHER: GET OWN PROFILE =================
+    static async getOwnTeacherProfile(userId) {
+        const teacher = await prisma.teacher.findUnique({
+            where: { userId },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        phone: true
+                    }
+                },
+                teacherAssignments: {
+                    where: {
+                        academicYear: { isActive: true }
+                    },
+                    include: {
+                        classSubject: {
+                            include: {
+                                class: true,
+                                subject: true
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        if (!teacher) {
+            throw new Error('Teacher profile not found');
+        }
+        return {
+            id: teacher.id,
+            employeeId: teacher.employeeId,
+            name: teacher.user.name,
+            email: teacher.user.email,
+            phone: teacher.user.phone,
+            qualification: teacher.qualification,
+            specialization: teacher.specialization,
+            address: teacher.address,
+            hireDate: teacher.hireDate,
+            profilePhoto: teacher.profilePhoto,
+            currentClasses: teacher.teacherAssignments.map(ta => ({
+                class: `${ta.classSubject.class.name} ${ta.classSubject.class.section}`,
+                subject: ta.classSubject.subject.name,
+                isPrimary: ta.isPrimary
+            }))
+        };
+    }
+    // ================= TEACHER: UPLOAD PROFILE PHOTO =================
+    static async uploadTeacherProfilePhoto(userId, file) {
+        const teacher = await prisma.teacher.findUnique({
+            where: { userId }
+        });
+        if (!teacher) {
+            if (file)
+                fs.unlinkSync(file.path);
+            throw new Error('Teacher profile not found');
+        }
+        // Delete old photo if exists
+        if (teacher.profilePhoto) {
+            const oldPhotoPath = path.join(process.cwd(), teacher.profilePhoto);
+            if (fs.existsSync(oldPhotoPath)) {
+                fs.unlinkSync(oldPhotoPath);
+            }
+        }
+        // Update teacher with new photo URL
+        const photoUrl = `/uploads/teachers/${file.filename}`;
+        const updatedTeacher = await prisma.teacher.update({
+            where: { id: teacher.id },
+            data: { profilePhoto: photoUrl }
+        });
+        return {
+            profilePhoto: updatedTeacher.profilePhoto,
+            photoUrl: `http://localhost:${process.env.PORT || 3000}${photoUrl}`
+        };
+    }
+    // ================= TEACHER: GET PROFILE PHOTO =================
+    static async getTeacherProfilePhoto(userId) {
+        const teacher = await prisma.teacher.findUnique({
+            where: { userId }
+        });
+        if (!teacher || !teacher.profilePhoto) {
+            return null;
+        }
+        const photoPath = path.join(process.cwd(), teacher.profilePhoto);
+        if (!fs.existsSync(photoPath)) {
+            return null;
+        }
+        return photoPath;
+    }
+    // ================= TEACHER: DELETE PROFILE PHOTO =================
+    static async deleteTeacherProfilePhoto(userId) {
+        const teacher = await prisma.teacher.findUnique({
+            where: { userId }
+        });
+        if (!teacher) {
+            throw new Error('Teacher profile not found');
+        }
+        // Delete physical file
+        if (teacher.profilePhoto) {
+            const photoPath = path.join(process.cwd(), teacher.profilePhoto);
+            if (fs.existsSync(photoPath)) {
+                fs.unlinkSync(photoPath);
+            }
+        }
+        // Update database
+        await prisma.teacher.update({
+            where: { id: teacher.id },
+            data: { profilePhoto: null }
+        });
+        return { success: true };
     }
     // ================= CREATE STUDENT (ADMIN ONLY) =================
     static async createStudent(data, adminId) {
@@ -248,7 +563,8 @@ export default class AuthService {
         }
         if (user?.role === 'TEACHER') {
             const teacher = await prisma.teacher.findUnique({
-                where: { userId: user.id }
+                where: { userId: user.id },
+                include: { user: true }
             });
             return { ...user, teacher };
         }
@@ -262,9 +578,40 @@ export default class AuthService {
     }
     // ================= GET ALL USERS =================
     static async getAllUsers() {
-        return prisma.user.findMany({
+        const users = await prisma.user.findMany({
+            include: {
+                student: {
+                    include: { class: true }
+                },
+                teacher: true,
+                parent: true
+            },
             orderBy: { createdAt: 'desc' }
         });
+        return users.map(user => ({
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            phone: user.phone,
+            role: user.role,
+            status: user.status,
+            isActive: user.isActive,
+            createdAt: user.createdAt,
+            student: user.student ? {
+                id: user.student.id,
+                rollNumber: user.student.rollNumber,
+                classId: user.student.classId
+            } : null,
+            teacher: user.teacher ? {
+                id: user.teacher.id,
+                employeeId: user.teacher.employeeId,
+                qualification: user.teacher.qualification,
+                specialization: user.teacher.specialization
+            } : null,
+            parent: user.parent ? {
+                id: user.parent.id
+            } : null
+        }));
     }
     // ================= UPDATE USER =================
     static async updateUser(id, data) {
@@ -395,14 +742,12 @@ export default class AuthService {
     }
     // Update student profile (limited fields)
     static async updateStudentProfile(userId, data) {
-        // First find student by userId
         const student = await prisma.student.findUnique({
             where: { userId }
         });
         if (!student) {
             throw new Error('Student not found');
         }
-        // Update student
         const updatedStudent = await prisma.student.update({
             where: { id: student.id },
             data: {
@@ -412,7 +757,6 @@ export default class AuthService {
                 state: data.state !== undefined ? data.state : student.state,
             }
         });
-        // Update phone in User table if provided
         if (data.phone) {
             await prisma.user.update({
                 where: { id: userId },

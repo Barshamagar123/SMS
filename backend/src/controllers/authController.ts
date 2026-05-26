@@ -7,13 +7,14 @@ import { fileURLToPath } from 'url';
 
 import AuthService from '../services/authService.js';
 import { AuthenticatedRequest } from '../types/index.js';
-import { uploadStudentPhoto } from '../config/multerConfig.js';
+import { uploadStudentPhoto, uploadTeacherPhoto } from '../config/multerConfig.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Export multer middleware for photo upload
-export const uploadPhoto = uploadStudentPhoto.single('photo');
+export const uploadStudentPhotoMiddleware = uploadStudentPhoto.single('photo');
+export const uploadTeacherPhotoMiddleware = uploadTeacherPhoto.single('photo');
 
 // Helper function to safely convert params to number
 const toInt = (val: string | string[] | undefined): number => {
@@ -110,15 +111,18 @@ class AuthController {
 
     try {
 
-      const { email, password, name, qualification, specialization, phone, address, hireDate } = req.body;
+      const { email, name, qualification, specialization, phone, address, hireDate } = req.body;
 
       // Validate required fields
       const missingFields: string[] = [];
       if (!email) missingFields.push('email');
-      if (!password) missingFields.push('password');
+    
       if (!name) missingFields.push('name');
       if (!qualification) missingFields.push('qualification');
       if (!specialization) missingFields.push('specialization');
+      if (!phone) missingFields.push('phone');
+      if (!address) missingFields.push('address');
+      if (!hireDate) missingFields.push('hireDate');
 
       if (missingFields.length > 0) {
         return res.status(400).json({
@@ -133,6 +137,310 @@ class AuthController {
         success: true,
         message: "Teacher created successfully",
         data,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (err: any) {
+
+      res.status(400).json({
+        success: false,
+        message: err.message
+      });
+
+    }
+
+  };
+
+
+  // ================= ADMIN: GET ALL TEACHERS =================
+  getAllTeachers = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+
+    try {
+
+      const data = await AuthService.getAllTeachers();
+
+      res.json({
+        success: true,
+        data,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (err: any) {
+
+      res.status(400).json({
+        success: false,
+        message: err.message
+      });
+
+    }
+
+  };
+
+
+  // ================= ADMIN: GET TEACHER BY ID =================
+  getTeacherById = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+
+    try {
+
+      const { id } = req.params;
+      const teacherId = toInt(id);
+
+      if (isNaN(teacherId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid teacher ID'
+        });
+      }
+
+      const data = await AuthService.getTeacherById(teacherId);
+
+      res.json({
+        success: true,
+        data,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (err: any) {
+
+      res.status(400).json({
+        success: false,
+        message: err.message
+      });
+
+    }
+
+  };
+
+
+  // ================= ADMIN: UPDATE TEACHER =================
+  updateTeacher = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+
+    try {
+
+      const { id } = req.params;
+      const teacherId = toInt(id);
+
+      if (isNaN(teacherId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid teacher ID'
+        });
+      }
+
+      const data = await AuthService.updateTeacher(teacherId, req.body, req.user!.id);
+
+      res.json({
+        success: true,
+        message: "Teacher updated successfully",
+        data,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (err: any) {
+
+      res.status(400).json({
+        success: false,
+        message: err.message
+      });
+
+    }
+
+  };
+
+
+  // ================= ADMIN: DELETE TEACHER =================
+  deleteTeacher = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+
+    try {
+
+      const { id } = req.params;
+      const teacherId = toInt(id);
+
+      if (isNaN(teacherId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid teacher ID'
+        });
+      }
+
+      await AuthService.deleteTeacher(teacherId);
+
+      res.json({
+        success: true,
+        message: "Teacher deleted successfully",
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (err: any) {
+
+      res.status(400).json({
+        success: false,
+        message: err.message
+      });
+
+    }
+
+  };
+
+
+  // ================= TEACHER: GET OWN PROFILE =================
+  getOwnTeacherProfile = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+
+    try {
+
+      const user = req.user;
+
+      if (!user || user.role !== 'TEACHER') {
+        return res.status(403).json({
+          success: false,
+          message: 'Only teachers can access this'
+        });
+      }
+
+      const data = await AuthService.getOwnTeacherProfile(user.id);
+
+      res.json({
+        success: true,
+        data,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (err: any) {
+
+      res.status(400).json({
+        success: false,
+        message: err.message
+      });
+
+    }
+
+  };
+
+
+  // ================= TEACHER: UPLOAD PROFILE PHOTO =================
+  uploadTeacherProfilePhoto = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+
+    try {
+
+      const user = req.user;
+      const file = (req as any).file;
+
+      if (!file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No file uploaded. Please select an image file'
+        });
+      }
+
+      if (!user || user.role !== 'TEACHER') {
+        if (file) fs.unlinkSync(file.path);
+        return res.status(403).json({
+          success: false,
+          message: 'Only teachers can upload their profile photo'
+        });
+      }
+
+      const data = await AuthService.uploadTeacherProfilePhoto(user.id, file);
+
+      res.json({
+        success: true,
+        message: 'Profile photo uploaded successfully',
+        data,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (err: any) {
+
+      res.status(400).json({
+        success: false,
+        message: err.message
+      });
+
+    }
+
+  };
+
+
+  // ================= TEACHER: GET PROFILE PHOTO =================
+  getTeacherProfilePhoto = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+
+    try {
+
+      const user = req.user;
+
+      if (!user || user.role !== 'TEACHER') {
+        return res.status(403).json({
+          success: false,
+          message: 'Only teachers can access this'
+        });
+      }
+
+      const photoPath = await AuthService.getTeacherProfilePhoto(user.id);
+
+      if (!photoPath) {
+        return res.status(404).json({
+          success: false,
+          message: 'Profile photo not found'
+        });
+      }
+
+      return res.sendFile(photoPath);
+
+    } catch (err: any) {
+
+      res.status(400).json({
+        success: false,
+        message: err.message
+      });
+
+    }
+
+  };
+
+
+  // ================= TEACHER: DELETE PROFILE PHOTO =================
+  deleteTeacherProfilePhoto = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+
+    try {
+
+      const user = req.user;
+
+      if (!user || user.role !== 'TEACHER') {
+        return res.status(403).json({
+          success: false,
+          message: 'Only teachers can delete their profile photo'
+        });
+      }
+
+      await AuthService.deleteTeacherProfilePhoto(user.id);
+
+      res.json({
+        success: true,
+        message: 'Profile photo deleted successfully',
         timestamp: new Date().toISOString()
       });
 
@@ -329,7 +637,6 @@ class AuthController {
         });
       }
 
-      // ✅ FIX: Use toInt helper to safely convert
       const studentId = toInt(id);
       const newClassIdNum = toInt(newClassId);
 
@@ -340,7 +647,6 @@ class AuthController {
         });
       }
 
-      // Get student with current class
       const student = await AuthService.getStudentById(studentId);
 
       if (!student) {
@@ -350,7 +656,6 @@ class AuthController {
         });
       }
 
-      // Get new class
       const newClass = await AuthService.getClassById(newClassIdNum);
 
       if (!newClass) {
@@ -360,7 +665,6 @@ class AuthController {
         });
       }
 
-      // Check if already in same class
       if (student.classId === newClassIdNum) {
         return res.status(400).json({
           success: false,
@@ -371,7 +675,6 @@ class AuthController {
       const oldClassName = `${student.class.name} ${student.class.section}`;
       const newClassName = `${newClass.name} ${newClass.section}`;
 
-      // Transfer student
       const transferredStudent = await AuthService.transferStudent(
         studentId,
         newClassIdNum,
@@ -416,7 +719,6 @@ class AuthController {
 
       const { email, password, name, role } = req.body;
 
-      // Validate required fields
       const missingFields: string[] = [];
       if (!email) missingFields.push('email');
       if (!password) missingFields.push('password');
@@ -461,7 +763,6 @@ class AuthController {
 
       const { userId, action } = req.body;
 
-      // Validate required fields
       if (!userId) {
         return res.status(400).json({
           success: false,
@@ -914,7 +1215,7 @@ class AuthController {
           address: updatedStudent.address,
           city: updatedStudent.city,
           state: updatedStudent.state,
-    
+        
         }
       });
 
@@ -959,7 +1260,6 @@ class AuthController {
         });
       }
 
-      // Delete old photo if exists
       if (student.profilePhoto) {
         const oldPhotoPath = path.join(__dirname, '../../', student.profilePhoto);
         if (fs.existsSync(oldPhotoPath)) {
@@ -967,7 +1267,6 @@ class AuthController {
         }
       }
 
-      // Update student with new photo URL
       const photoUrl = `/uploads/students/${file.filename}`;
       const updatedStudent = await AuthService.updateStudentPhoto(student.id, photoUrl);
 
@@ -1053,7 +1352,6 @@ class AuthController {
         });
       }
 
-      // Delete physical file
       if (student.profilePhoto) {
         const photoPath = path.join(__dirname, '../../', student.profilePhoto);
         if (fs.existsSync(photoPath)) {
@@ -1061,7 +1359,6 @@ class AuthController {
         }
       }
 
-      // Update database
       await AuthService.updateStudentPhoto(student.id, null);
 
       return res.status(200).json({

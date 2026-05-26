@@ -24,6 +24,7 @@
     "@types/multer": "^2.1.0",
     "@types/node": "^25.9.1",
     "@types/nodemailer": "^8.0.0",
+    "@types/pdfkit": "^0.17.6",
     "@types/winston": "^2.4.4",
     "nodemon": "^3.1.14",
     "prisma": "^6.19.3",
@@ -42,6 +43,7 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",
     "nodemailer": "^8.0.7",
+    "pdfkit": "^0.18.0",
     "winston": "^3.19.0"
   }
 }

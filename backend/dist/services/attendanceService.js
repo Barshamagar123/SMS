@@ -3,6 +3,13 @@ const prisma = new PrismaClient();
 export class AttendanceService {
     // Get students by class for marking attendance
     static async getStudentsByClass(classId, date) {
+        // Check if date is holiday
+        if (date) {
+            const holidayInfo = await this.isHoliday(new Date(date));
+            if (holidayInfo.isHoliday) {
+                throw new Error(`Cannot mark attendance on ${date}. It is a holiday: ${holidayInfo.holidayName}`);
+            }
+        }
         const students = await prisma.student.findMany({
             where: {
                 classId,
@@ -59,6 +66,11 @@ export class AttendanceService {
     }
     // Mark attendance
     static async markAttendance(classId, date, attendances, markedBy) {
+        // Check if date is holiday
+        const holidayInfo = await this.isHoliday(new Date(date));
+        if (holidayInfo.isHoliday) {
+            throw new Error(`Cannot mark attendance on ${date}. It is a holiday: ${holidayInfo.holidayName}`);
+        }
         const attendanceDate = new Date(date);
         attendanceDate.setHours(0, 0, 0, 0);
         const results = [];
@@ -137,6 +149,13 @@ export class AttendanceService {
         startDate.setHours(0, 0, 0, 0);
         const endDate = new Date(currentYear, currentMonth, 0);
         endDate.setHours(23, 59, 59, 999);
+        // Get holidays in this month
+        const holidays = await prisma.holiday.findMany({
+            where: {
+                date: { gte: startDate, lte: endDate }
+            }
+        });
+        const holidayDates = new Set(holidays.map(h => h.date.toISOString().split('T')[0]));
         const attendances = await prisma.attendance.findMany({
             where: {
                 classId,
@@ -161,7 +180,8 @@ export class AttendanceService {
         const dailySummary = {};
         for (const att of attendances) {
             const dateStr = att.date.toISOString().split('T')[0];
-            if (dateStr) {
+            // Skip holidays in summary
+            if (dateStr && !holidayDates.has(dateStr)) {
                 if (!dailySummary[dateStr]) {
                     dailySummary[dateStr] = { total: 0, present: 0, absent: 0 };
                 }
@@ -183,7 +203,11 @@ export class AttendanceService {
             year: currentYear,
             classPercentage: Number(classPercentage.toFixed(2)),
             dailySummary,
-            totalRecords
+            totalRecords,
+            holidays: holidays.map(h => ({
+                date: h.date.toISOString().split('T')[0],
+                name: h.name
+            }))
         };
     }
     // Get student attendance
@@ -209,7 +233,7 @@ export class AttendanceService {
         const presentDays = allAttendance.filter(a => a.status === 'PRESENT').length;
         const percentage = totalDays > 0 ? (presentDays / totalDays) * 100 : 0;
         const showAlert = percentage < 75 && percentage > 0;
-        // Monthly breakdown - FIXED: Use numbers directly, no string splitting
+        // Monthly breakdown
         const monthlyMap = new Map();
         for (const att of allAttendance) {
             const yearValue = att.date.getFullYear();
@@ -277,6 +301,252 @@ export class AttendanceService {
             where: { id: attendanceId }
         });
         return { success: true };
+    }
+    // ================= HOLIDAY MANAGEMENT METHODS =================
+    // Check if a date is a holiday
+    static async isHoliday(date) {
+        const startDate = new Date(date);
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(date);
+        endDate.setHours(23, 59, 59, 999);
+        const holiday = await prisma.holiday.findFirst({
+            where: {
+                date: {
+                    gte: startDate,
+                    lte: endDate
+                }
+            }
+        });
+        if (holiday) {
+            return { isHoliday: true, holidayName: holiday.name };
+        }
+        return { isHoliday: false };
+    }
+    // Get all holidays
+    static async getAllHolidays(year, month) {
+        const where = {};
+        if (year && month) {
+            const startDate = new Date(year, month - 1, 1);
+            const endDate = new Date(year, month, 0);
+            where.date = { gte: startDate, lte: endDate };
+        }
+        else if (year) {
+            const startDate = new Date(year, 0, 1);
+            const endDate = new Date(year, 11, 31);
+            where.date = { gte: startDate, lte: endDate };
+        }
+        return prisma.holiday.findMany({
+            where,
+            orderBy: { date: 'asc' }
+        });
+    }
+    // Add holiday (Admin only)
+    static async addHoliday(name, date, description) {
+        // Check if holiday already exists on this date
+        const existing = await prisma.holiday.findFirst({
+            where: {
+                date: {
+                    gte: new Date(date),
+                    lt: new Date(new Date(date).setHours(23, 59, 59, 999))
+                }
+            }
+        });
+        if (existing) {
+            throw new Error('Holiday already exists on this date');
+        }
+        return prisma.holiday.create({
+            data: {
+                name,
+                date: new Date(date),
+                description: description || null
+            }
+        });
+    }
+    // Delete holiday
+    static async deleteHoliday(id) {
+        return prisma.holiday.delete({ where: { id } });
+    }
+    // Get monthly report with holidays excluded (for PDF and reports)
+    static async getMonthlyReportWithHolidays(classId, month, year) {
+        const startDate = new Date(year, month - 1, 1);
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(year, month, 0);
+        endDate.setHours(23, 59, 59, 999);
+        // Get all holidays in this month
+        const holidays = await prisma.holiday.findMany({
+            where: {
+                date: { gte: startDate, lte: endDate }
+            }
+        });
+        const holidayDates = new Set(holidays.map(h => h.date.toISOString().split('T')[0]));
+        // Get all working days (excluding holidays)
+        const workingDays = [];
+        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+            const dateStr = d.toISOString().split('T')[0];
+            if (dateStr && !holidayDates.has(dateStr)) {
+                workingDays.push(dateStr);
+            }
+        }
+        // Get class name
+        const classData = await prisma.class.findUnique({
+            where: { id: classId }
+        });
+        const className = classData ? `${classData.name} ${classData.section}` : 'Unknown Class';
+        // Get all students in the class
+        const students = await prisma.student.findMany({
+            where: { classId, isActive: true },
+            include: {
+                user: { select: { name: true } }
+            },
+            orderBy: { rollNumber: 'asc' }
+        });
+        // Get attendance records (only for working days)
+        const attendances = await prisma.attendance.findMany({
+            where: {
+                classId,
+                date: { gte: startDate, lte: endDate }
+            }
+        });
+        // Calculate student-wise attendance (excluding holidays)
+        const studentAttendance = students.map(student => {
+            const studentAttendances = attendances.filter(a => a.studentId === student.id);
+            const totalDays = workingDays.length;
+            const presentDays = studentAttendances.filter(a => a.status === 'PRESENT').length;
+            const percentage = totalDays > 0 ? (presentDays / totalDays) * 100 : 0;
+            return {
+                id: student.id,
+                rollNumber: student.rollNumber,
+                name: student.user.name,
+                totalDays,
+                presentDays,
+                absentDays: totalDays - presentDays,
+                percentage: Number(percentage.toFixed(2))
+            };
+        });
+        // Calculate class percentage (excluding holidays)
+        const totalPresent = attendances.filter(a => a.status === 'PRESENT').length;
+        const totalPossible = workingDays.length * students.length;
+        const classPercentage = totalPossible > 0 ? (totalPresent / totalPossible) * 100 : 0;
+        return {
+            className,
+            month,
+            year,
+            totalStudents: students.length,
+            totalWorkingDays: workingDays.length,
+            totalHolidays: holidays.length,
+            holidays: holidays.map(h => ({
+                date: h.date.toISOString().split('T')[0],
+                name: h.name,
+                description: h.description
+            })),
+            classPercentage: Number(classPercentage.toFixed(2)),
+            students: studentAttendance
+        };
+    }
+    // ================= PDF REPORT METHODS =================
+    // Get monthly detailed report for PDF (with holidays excluded)
+    static async getMonthlyDetailedReport(classId, month, year) {
+        return this.getMonthlyReportWithHolidays(classId, month, year);
+    }
+    // Get yearly detailed report for PDF
+    static async getYearlyDetailedReport(classId, year) {
+        const startDate = new Date(year, 0, 1);
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(year, 11, 31);
+        endDate.setHours(23, 59, 59, 999);
+        // Get all holidays in the year
+        const holidays = await prisma.holiday.findMany({
+            where: {
+                date: { gte: startDate, lte: endDate }
+            }
+        });
+        const holidayDates = new Set(holidays.map(h => h.date.toISOString().split('T')[0]));
+        // Get class name
+        const classData = await prisma.class.findUnique({
+            where: { id: classId }
+        });
+        const className = classData ? `${classData.name} ${classData.section}` : 'Unknown Class';
+        // Get all students in the class
+        const students = await prisma.student.findMany({
+            where: { classId, isActive: true },
+            include: {
+                user: { select: { name: true } }
+            },
+            orderBy: { rollNumber: 'asc' }
+        });
+        // Get all attendance records for the year
+        const attendances = await prisma.attendance.findMany({
+            where: {
+                classId,
+                date: { gte: startDate, lte: endDate }
+            }
+        });
+        // Calculate total working days in the year
+        let totalWorkingDaysCount = 0;
+        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+            const dateStr = d.toISOString().split('T')[0];
+            if (dateStr && !holidayDates.has(dateStr)) {
+                totalWorkingDaysCount++;
+            }
+        }
+        // Monthly breakdown (excluding holidays)
+        const monthlyData = [];
+        for (let month = 1; month <= 12; month++) {
+            const monthStart = new Date(year, month - 1, 1);
+            const monthEnd = new Date(year, month, 0);
+            // Get working days in this month (excluding holidays)
+            let workingDaysCount = 0;
+            for (let d = new Date(monthStart); d <= monthEnd; d.setDate(d.getDate() + 1)) {
+                const dateStr = d.toISOString().split('T')[0];
+                if (dateStr && !holidayDates.has(dateStr)) {
+                    workingDaysCount++;
+                }
+            }
+            const monthAttendances = attendances.filter(a => a.date >= monthStart && a.date <= monthEnd);
+            const presentDays = monthAttendances.filter(a => a.status === 'PRESENT').length;
+            const percentage = workingDaysCount > 0 && students.length > 0
+                ? (presentDays / (workingDaysCount * students.length)) * 100
+                : 0;
+            monthlyData.push({
+                month,
+                totalDays: workingDaysCount,
+                presentDays,
+                percentage: Number(percentage.toFixed(2))
+            });
+        }
+        // Student-wise yearly summary (excluding holidays)
+        const studentSummaries = students.map(student => {
+            const studentAttendances = attendances.filter(a => a.studentId === student.id);
+            const presentDays = studentAttendances.filter(a => a.status === 'PRESENT').length;
+            const percentage = totalWorkingDaysCount > 0 ? (presentDays / totalWorkingDaysCount) * 100 : 0;
+            return {
+                id: student.id,
+                rollNumber: student.rollNumber,
+                name: student.user.name,
+                totalDays: totalWorkingDaysCount,
+                presentDays,
+                absentDays: totalWorkingDaysCount - presentDays,
+                percentage: Number(percentage.toFixed(2))
+            };
+        });
+        // Calculate overall percentage
+        const totalPresent = attendances.filter(a => a.status === 'PRESENT').length;
+        const totalPossible = totalWorkingDaysCount * students.length;
+        const overallPercentage = totalPossible > 0 ? (totalPresent / totalPossible) * 100 : 0;
+        return {
+            className,
+            year,
+            totalStudents: students.length,
+            totalWorkingDays: totalWorkingDaysCount,
+            totalHolidays: holidays.length,
+            holidays: holidays.map(h => ({
+                date: h.date.toISOString().split('T')[0],
+                name: h.name
+            })),
+            overallPercentage: Number(overallPercentage.toFixed(2)),
+            monthlyData,
+            students: studentSummaries
+        };
     }
 }
 export default AttendanceService;

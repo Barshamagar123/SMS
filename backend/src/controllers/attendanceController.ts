@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../types/index.js';
 import AttendanceService from '../services/attendanceService.js';
+import PDFService from '../services/pdfService.js';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -38,7 +39,6 @@ export const getStudentsForAttendance = async (req: AuthenticatedRequest, res: R
       return res.status(400).json({ success: false, message: 'Invalid class ID' });
     }
 
-    // Convert date to string safely
     let dateStr: string | undefined;
     if (date) {
       dateStr = String(date);
@@ -94,7 +94,6 @@ export const getClassAttendance = async (req: AuthenticatedRequest, res: Respons
       return res.status(400).json({ success: false, message: 'Invalid class ID' });
     }
 
-    // Convert month and year to numbers safely
     let monthNum: number | undefined;
     let yearNum: number | undefined;
     
@@ -150,6 +149,92 @@ export const deleteAttendance = async (req: AuthenticatedRequest, res: Response)
 
     await AttendanceService.deleteAttendance(idNum, req.user!.id);
     res.json({ success: true, message: 'Attendance record deleted successfully' });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ================= PDF REPORT DOWNLOAD FUNCTIONS =================
+
+// Download Monthly Attendance Report as PDF
+export const downloadMonthlyReport = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { classId } = req.params;
+    const { month, year } = req.query;
+
+    const classIdNum = toNumber(classId);
+    if (isNaN(classIdNum)) {
+      return res.status(400).json({ success: false, message: 'Invalid class ID' });
+    }
+
+    let monthNum = month ? toNumber(month) : new Date().getMonth() + 1;
+    let yearNum = year ? toNumber(year) : new Date().getFullYear();
+
+    if (isNaN(monthNum)) monthNum = new Date().getMonth() + 1;
+    if (isNaN(yearNum)) yearNum = new Date().getFullYear();
+
+    // Get detailed report data
+    const reportData = await AttendanceService.getMonthlyDetailedReport(classIdNum, monthNum, yearNum);
+    
+    // ✅ FIX: Use totalWorkingDays (the correct property name)
+    const totalDays = reportData.totalWorkingDays;
+    
+    // Generate PDF
+    const filePath = await PDFService.generateMonthlyAttendanceReport(
+      reportData.className,
+      monthNum,
+      yearNum,
+      reportData.students,
+      {},
+      totalDays,
+      reportData.classPercentage
+    );
+
+    const fileName = `attendance_${reportData.className.replace(/\s/g, '_')}_${monthNum}_${yearNum}.pdf`;
+    res.download(filePath, fileName, (err) => {
+      if (err) {
+        console.error('Download error:', err);
+        res.status(500).json({ success: false, message: 'Error downloading file' });
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Download Yearly Attendance Report as PDF
+export const downloadYearlyReport = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { classId } = req.params;
+    const { year } = req.query;
+
+    const classIdNum = toNumber(classId);
+    if (isNaN(classIdNum)) {
+      return res.status(400).json({ success: false, message: 'Invalid class ID' });
+    }
+
+    let yearNum = year ? toNumber(year) : new Date().getFullYear();
+    if (isNaN(yearNum)) yearNum = new Date().getFullYear();
+
+    // Get detailed report data
+    const reportData = await AttendanceService.getYearlyDetailedReport(classIdNum, yearNum);
+    
+    // Generate PDF
+    const filePath = await PDFService.generateYearlyAttendanceReport(
+      reportData.className,
+      yearNum,
+      reportData.students,
+      reportData.monthlyData,
+      reportData.overallPercentage
+    );
+
+    const fileName = `attendance_${reportData.className.replace(/\s/g, '_')}_YEAR_${yearNum}.pdf`;
+    res.download(filePath, fileName, (err) => {
+      if (err) {
+        console.error('Download error:', err);
+        res.status(500).json({ success: false, message: 'Error downloading file' });
+      }
+    });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }

@@ -6,7 +6,9 @@ import {
   markAttendance,
   getClassAttendance,
   getStudentAttendance,
-  deleteAttendance
+  deleteAttendance,
+  downloadMonthlyReport,
+  downloadYearlyReport
 } from '../controllers/attendanceController.js';
 
 const router = Router();
@@ -27,6 +29,14 @@ router.get('/class/:classId/report', authenticate, getClassAttendance);
 
 // Delete an attendance record (within 7 days)
 router.delete('/:id', authenticate, deleteAttendance);
+
+// ========================= PDF REPORT DOWNLOAD ROUTES =========================
+
+// Download monthly attendance report as PDF
+router.get('/class/:classId/download-monthly', authenticate, downloadMonthlyReport);
+
+// Download yearly attendance report as PDF
+router.get('/class/:classId/download-yearly', authenticate, downloadYearlyReport);
 
 // ========================= STUDENT/PARENT ROUTES =========================
 

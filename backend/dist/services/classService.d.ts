@@ -17,8 +17,8 @@ export declare class ClassService {
             createdAt: Date;
             updatedAt: Date;
             name: string;
-            code: string;
             description: string | null;
+            code: string;
         }[];
     }[]>;
     static getClassById(id: number): Promise<({
@@ -40,10 +40,10 @@ export declare class ClassService {
                 lastLoginAt: Date | null;
             };
         } & {
-            classId: number;
             id: number;
             rollNumber: string;
             userId: number;
+            classId: number;
             dateOfBirth: Date | null;
             gender: import("@prisma/client").$Enums.Gender | null;
             bloodGroup: string | null;
@@ -110,10 +110,10 @@ export declare class ClassService {
                 id: number;
                 createdAt: Date;
                 updatedAt: Date;
-                isPrimary: boolean;
                 teacherId: number;
                 classSubjectId: number;
                 academicYearId: number;
+                isPrimary: boolean;
             })[];
             subject: {
                 id: number;
@@ -121,12 +121,12 @@ export declare class ClassService {
                 createdAt: Date;
                 updatedAt: Date;
                 name: string;
-                code: string;
                 description: string | null;
+                code: string;
             };
         } & {
-            classId: number;
             id: number;
+            classId: number;
             isActive: boolean;
             createdAt: Date;
             subjectId: number;
@@ -172,12 +172,12 @@ export declare class ClassService {
             createdAt: Date;
             updatedAt: Date;
             name: string;
-            code: string;
             description: string | null;
+            code: string;
         };
     } & {
-        classId: number;
         id: number;
+        classId: number;
         isActive: boolean;
         createdAt: Date;
         subjectId: number;

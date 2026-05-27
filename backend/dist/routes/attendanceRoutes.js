@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/authMiddleware.js';
-import { getTeacherClasses, getStudentsForAttendance, markAttendance, getClassAttendance, getStudentAttendance, deleteAttendance } from '../controllers/attendanceController.js';
+import { getTeacherClasses, getStudentsForAttendance, markAttendance, getClassAttendance, getStudentAttendance, deleteAttendance, downloadMonthlyReport, downloadYearlyReport } from '../controllers/attendanceController.js';
 const router = Router();
 // ========================= TEACHER ROUTES =========================
 // Get all classes assigned to the logged-in teacher
@@ -13,6 +13,11 @@ router.post('/class/:classId/mark', authenticate, markAttendance);
 router.get('/class/:classId/report', authenticate, getClassAttendance);
 // Delete an attendance record (within 7 days)
 router.delete('/:id', authenticate, deleteAttendance);
+// ========================= PDF REPORT DOWNLOAD ROUTES =========================
+// Download monthly attendance report as PDF
+router.get('/class/:classId/download-monthly', authenticate, downloadMonthlyReport);
+// Download yearly attendance report as PDF
+router.get('/class/:classId/download-yearly', authenticate, downloadYearlyReport);
 // ========================= STUDENT/PARENT ROUTES =========================
 // Get attendance for the logged-in student
 router.get('/me', authenticate, getStudentAttendance);

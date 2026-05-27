@@ -12,6 +12,7 @@ import classRoutes from './routes/classRoutes.js';
 import subjectRoutes from './routes/subjectRoutes.js';
 import teacherAssignmentRoutes from './routes/teacherAssignmentRoutes.js';
 import attendanceRoutes from './routes/attendanceRoutes.js';
+import holidayRoutes from './routes/holidayRoutes.js';
 
 
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
@@ -46,6 +47,7 @@ app.use('/api/classes', classRoutes);
 app.use('/api/subjects', subjectRoutes);
 app.use('/api/teacher-assignments', teacherAssignmentRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/holidays', holidayRoutes);
 
 
 

@@ -6,3 +6,5 @@ export declare const markAttendance: (req: AuthenticatedRequest, res: Response) 
 export declare const getClassAttendance: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
 export declare const getStudentAttendance: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
 export declare const deleteAttendance: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const downloadMonthlyReport: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const downloadYearlyReport: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;

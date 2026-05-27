@@ -24,8 +24,8 @@ export declare class AssignmentService {
             createdAt: Date;
             updatedAt: Date;
             name: string;
-            code: string;
             description: string | null;
+            code: string;
         };
         academicYear: string;
         isPrimary: boolean;
@@ -50,8 +50,8 @@ export declare class AssignmentService {
             createdAt: Date;
             updatedAt: Date;
             name: string;
-            code: string;
             description: string | null;
+            code: string;
         };
         academicYear: string;
         isPrimary: boolean;

@@ -25,13 +25,13 @@ export declare class AttendanceService {
         status: AttendanceStatus;
         remark?: string;
     }[], markedBy: number): Promise<{
-        classId: number;
-        date: Date;
         id: number;
+        classId: number;
         createdAt: Date;
         updatedAt: Date;
         status: import("@prisma/client").$Enums.AttendanceStatus;
         studentId: number;
+        date: Date;
         remark: string | null;
         markedBy: number;
     }[]>;
@@ -48,6 +48,10 @@ export declare class AttendanceService {
         classPercentage: number;
         dailySummary: Record<string, DailySummary>;
         totalRecords: number;
+        holidays: {
+            date: string | undefined;
+            name: string;
+        }[];
     }>;
     static getStudentAttendance(studentId: number): Promise<{
         summary: {
@@ -69,6 +73,107 @@ export declare class AttendanceService {
     }>;
     static deleteAttendance(attendanceId: number, teacherId: number): Promise<{
         success: boolean;
+    }>;
+    static isHoliday(date: Date): Promise<{
+        isHoliday: boolean;
+        holidayName?: string;
+    }>;
+    static getAllHolidays(year?: number, month?: number): Promise<{
+        id: number;
+        isActive: boolean;
+        createdAt: Date;
+        name: string;
+        date: Date;
+        description: string | null;
+    }[]>;
+    static addHoliday(name: string, date: string, description?: string): Promise<{
+        id: number;
+        isActive: boolean;
+        createdAt: Date;
+        name: string;
+        date: Date;
+        description: string | null;
+    }>;
+    static deleteHoliday(id: number): Promise<{
+        id: number;
+        isActive: boolean;
+        createdAt: Date;
+        name: string;
+        date: Date;
+        description: string | null;
+    }>;
+    static getMonthlyReportWithHolidays(classId: number, month: number, year: number): Promise<{
+        className: string;
+        month: number;
+        year: number;
+        totalStudents: number;
+        totalWorkingDays: number;
+        totalHolidays: number;
+        holidays: {
+            date: string | undefined;
+            name: string;
+            description: string | null;
+        }[];
+        classPercentage: number;
+        students: {
+            id: number;
+            rollNumber: string;
+            name: string;
+            totalDays: number;
+            presentDays: number;
+            absentDays: number;
+            percentage: number;
+        }[];
+    }>;
+    static getMonthlyDetailedReport(classId: number, month: number, year: number): Promise<{
+        className: string;
+        month: number;
+        year: number;
+        totalStudents: number;
+        totalWorkingDays: number;
+        totalHolidays: number;
+        holidays: {
+            date: string | undefined;
+            name: string;
+            description: string | null;
+        }[];
+        classPercentage: number;
+        students: {
+            id: number;
+            rollNumber: string;
+            name: string;
+            totalDays: number;
+            presentDays: number;
+            absentDays: number;
+            percentage: number;
+        }[];
+    }>;
+    static getYearlyDetailedReport(classId: number, year: number): Promise<{
+        className: string;
+        year: number;
+        totalStudents: number;
+        totalWorkingDays: number;
+        totalHolidays: number;
+        holidays: {
+            date: string | undefined;
+            name: string;
+        }[];
+        overallPercentage: number;
+        monthlyData: {
+            month: number;
+            totalDays: number;
+            presentDays: number;
+            percentage: number;
+        }[];
+        students: {
+            id: number;
+            rollNumber: string;
+            name: string;
+            totalDays: number;
+            presentDays: number;
+            absentDays: number;
+            percentage: number;
+        }[];
     }>;
 }
 export default AttendanceService;

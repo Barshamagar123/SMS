@@ -158,10 +158,10 @@ export default class AuthService {
             lastLoginAt: Date | null;
         };
     } & {
-        classId: number;
         id: number;
         rollNumber: string;
         userId: number;
+        classId: number;
         dateOfBirth: Date | null;
         gender: import("@prisma/client").$Enums.Gender | null;
         bloodGroup: string | null;
@@ -211,10 +211,10 @@ export default class AuthService {
             lastLoginAt: Date | null;
         };
     } & {
-        classId: number;
         id: number;
         rollNumber: string;
         userId: number;
+        classId: number;
         dateOfBirth: Date | null;
         gender: import("@prisma/client").$Enums.Gender | null;
         bloodGroup: string | null;
@@ -291,10 +291,10 @@ export default class AuthService {
                 section: string;
             };
         } & {
-            classId: number;
             id: number;
             rollNumber: string;
             userId: number;
+            classId: number;
             dateOfBirth: Date | null;
             gender: import("@prisma/client").$Enums.Gender | null;
             bloodGroup: string | null;
@@ -462,10 +462,10 @@ export default class AuthService {
     static resetPassword(token: string, newPassword: string): Promise<void>;
     static changePassword(userId: number, currentPassword: string, newPassword: string): Promise<void>;
     static getStudentByUserId(userId: number): Promise<{
-        classId: number;
         id: number;
         rollNumber: string;
         userId: number;
+        classId: number;
         dateOfBirth: Date | null;
         gender: import("@prisma/client").$Enums.Gender | null;
         bloodGroup: string | null;
@@ -510,10 +510,10 @@ export default class AuthService {
             lastLoginAt: Date | null;
         };
     } & {
-        classId: number;
         id: number;
         rollNumber: string;
         userId: number;
+        classId: number;
         dateOfBirth: Date | null;
         gender: import("@prisma/client").$Enums.Gender | null;
         bloodGroup: string | null;
@@ -536,10 +536,10 @@ export default class AuthService {
         updatedAt: Date | null;
     }) | null>;
     static updateStudentPhoto(studentId: number, photoUrl: string | null): Promise<{
-        classId: number;
         id: number;
         rollNumber: string;
         userId: number;
+        classId: number;
         dateOfBirth: Date | null;
         gender: import("@prisma/client").$Enums.Gender | null;
         bloodGroup: string | null;
@@ -568,10 +568,10 @@ export default class AuthService {
         state?: string;
         pincode?: string;
     }): Promise<{
-        classId: number;
         id: number;
         rollNumber: string;
         userId: number;
+        classId: number;
         dateOfBirth: Date | null;
         gender: import("@prisma/client").$Enums.Gender | null;
         bloodGroup: string | null;

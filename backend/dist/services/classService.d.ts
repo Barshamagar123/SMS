@@ -12,26 +12,26 @@ export declare class ClassService {
         studentCount: number;
         subjectCount: number;
         subjects: {
-            id: number;
+            name: string;
+            description: string | null;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            name: string;
-            description: string | null;
+            id: number;
             code: string;
         }[];
     }[]>;
     static getClassById(id: number): Promise<({
         students: ({
             user: {
-                id: number;
-                phone: string | null;
+                name: string;
                 isActive: boolean;
                 createdAt: Date;
                 updatedAt: Date;
+                id: number;
+                phone: string | null;
                 email: string;
                 password: string;
-                name: string;
                 role: import("@prisma/client").$Enums.RoleEnum;
                 status: import("@prisma/client").$Enums.UserStatus;
                 isFirstLogin: boolean;
@@ -40,10 +40,13 @@ export declare class ClassService {
                 lastLoginAt: Date | null;
             };
         } & {
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date | null;
             id: number;
+            classId: number;
             rollNumber: string;
             userId: number;
-            classId: number;
             dateOfBirth: Date | null;
             gender: import("@prisma/client").$Enums.Gender | null;
             bloodGroup: string | null;
@@ -61,22 +64,36 @@ export declare class ClassService {
             previousSchool: string | null;
             previousClass: string | null;
             profilePhoto: string | null;
-            isActive: boolean;
-            createdAt: Date;
-            updatedAt: Date | null;
         })[];
         classSubjects: ({
+            subject: {
+                name: string;
+                description: string | null;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                id: number;
+                code: string;
+            };
             teacherAssignments: ({
+                academicYear: {
+                    isActive: boolean;
+                    createdAt: Date;
+                    id: number;
+                    year: string;
+                    startDate: Date;
+                    endDate: Date;
+                };
                 teacher: {
                     user: {
-                        id: number;
-                        phone: string | null;
+                        name: string;
                         isActive: boolean;
                         createdAt: Date;
                         updatedAt: Date;
+                        id: number;
+                        phone: string | null;
                         email: string;
                         password: string;
-                        name: string;
                         role: import("@prisma/client").$Enums.RoleEnum;
                         status: import("@prisma/client").$Enums.UserStatus;
                         isFirstLogin: boolean;
@@ -85,55 +102,38 @@ export declare class ClassService {
                         lastLoginAt: Date | null;
                     };
                 } & {
+                    isActive: boolean;
+                    createdAt: Date;
+                    updatedAt: Date | null;
                     id: number;
                     userId: number;
                     address: string | null;
                     phone: string | null;
                     profilePhoto: string | null;
-                    isActive: boolean;
-                    createdAt: Date;
-                    updatedAt: Date | null;
                     employeeId: string;
                     qualification: string | null;
                     specialization: string | null;
                     hireDate: Date | null;
                 };
-                academicYear: {
-                    id: number;
-                    isActive: boolean;
-                    createdAt: Date;
-                    year: string;
-                    startDate: Date;
-                    endDate: Date;
-                };
             } & {
-                id: number;
                 createdAt: Date;
                 updatedAt: Date;
+                id: number;
+                academicYearId: number;
                 teacherId: number;
                 classSubjectId: number;
-                academicYearId: number;
                 isPrimary: boolean;
             })[];
-            subject: {
-                id: number;
-                isActive: boolean;
-                createdAt: Date;
-                updatedAt: Date;
-                name: string;
-                description: string | null;
-                code: string;
-            };
         } & {
-            id: number;
-            classId: number;
             isActive: boolean;
             createdAt: Date;
+            id: number;
+            classId: number;
             subjectId: number;
         })[];
     } & {
-        id: number;
         name: string;
+        id: number;
         section: string;
     }) | null>;
     static updateClass(id: number, data: {
@@ -162,24 +162,24 @@ export declare class ClassService {
     }>;
     static assignSubjectToClass(classId: number, subjectId: number): Promise<{
         class: {
-            id: number;
             name: string;
+            id: number;
             section: string;
         };
         subject: {
-            id: number;
+            name: string;
+            description: string | null;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            name: string;
-            description: string | null;
+            id: number;
             code: string;
         };
     } & {
-        id: number;
-        classId: number;
         isActive: boolean;
         createdAt: Date;
+        id: number;
+        classId: number;
         subjectId: number;
     }>;
     static removeSubjectFromClass(classId: number, subjectId: number): Promise<void>;

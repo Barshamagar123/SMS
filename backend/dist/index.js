@@ -11,6 +11,7 @@ import subjectRoutes from './routes/subjectRoutes.js';
 import teacherAssignmentRoutes from './routes/teacherAssignmentRoutes.js';
 import attendanceRoutes from './routes/attendanceRoutes.js';
 import holidayRoutes from './routes/holidayRoutes.js';
+import examRoutes from './routes/examRoutes.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { globalLimiter } from './middleware/rateLimitMiddleware.js';
 import { PrismaClient } from '@prisma/client';
@@ -38,6 +39,7 @@ app.use('/api/subjects', subjectRoutes);
 app.use('/api/teacher-assignments', teacherAssignmentRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/holidays', holidayRoutes);
+app.use('/api/exams', examRoutes);
 // Health check
 app.get('/health', (req, res) => {
     res.json({

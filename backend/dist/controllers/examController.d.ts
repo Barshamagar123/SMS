@@ -1,0 +1,14 @@
+import { Response } from 'express';
+import { AuthenticatedRequest } from '../types/index.js';
+export declare const createExamType: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const getAllExamTypes: (req: AuthenticatedRequest, res: Response) => Promise<void>;
+export declare const createExam: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const getExamsByClass: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const getExamsForTeacher: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const getStudentsForMarksEntry: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const enterMarks: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const getExamResults: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const lockExam: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const unlockExam: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const getMyExamResults: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const initializeGrades: (req: AuthenticatedRequest, res: Response) => Promise<void>;

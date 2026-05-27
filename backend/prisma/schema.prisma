@@ -67,6 +67,7 @@ model Student {
     // Documents
   profilePhoto  String?    @map("profile_photo") @db.VarChar(255)
   
+
   // Status
   isActive      Boolean    @default(true) @map("is_active")
   createdAt     DateTime   @default(now()) @map("created_at")
@@ -78,6 +79,8 @@ model Student {
 // ✅ ADD THESE RELATIONS
   attendances        Attendance[]
   attendanceSummaries AttendanceSummary[]
+      examResults        ExamResult[]
+
   @@index([rollNumber])
   @@map("students")
 }
@@ -119,6 +122,8 @@ model Class {
   classSubjects  ClassSubject[]  // Subjects taught in this class
     attendances      Attendance[]   
   @@unique([name, section])
+    exams            Exam[]
+
 
   @@map("classes")
 }
@@ -236,7 +241,8 @@ model Subject {
   
   // Relationships
   classSubjects    ClassSubject[]
-  
+    exams            Exam[]
+
   @@map("subjects")
 }
 
@@ -263,7 +269,8 @@ model AcademicYear {
   startDate   DateTime  @map("start_date")
   endDate     DateTime  @map("end_date")
   createdAt   DateTime  @default(now())              @map("created_at")
-  
+    exams            Exam[]
+
   // Relationships
   teacherAssignments TeacherAssignment[]
     attendanceSummaries AttendanceSummary[]
@@ -355,4 +362,94 @@ model Holiday {
   
   @@unique([date])
   @@map("holidays")
+}
+// ============================================
+// EXAM MANAGEMENT MODELS
+// ============================================
+
+// Exam Type (Monthly Test, Half-Yearly, Final)
+// ============================================
+// EXAM MANAGEMENT MODELS
+// ============================================
+
+// Exam Type (Monthly Test, Half-Yearly, Final)
+model ExamType {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique @db.VarChar(50)
+  description String?   @db.Text
+  weightage   Int?      @default(0)
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  exams       Exam[]
+  
+  @@map("exam_types")
+}
+
+// Exam Schedule
+model Exam {
+  id            Int       @id @default(autoincrement())
+  examTypeId    Int       @map("exam_type_id")
+  classId       Int       @map("class_id")
+  subjectId     Int       @map("subject_id")
+  academicYearId Int      @map("academic_year_id")
+  name          String    @db.VarChar(100)
+  examDate      DateTime  @map("exam_date")
+  maxMarks      Int       @map("max_marks")
+  passingMarks  Int       @map("passing_marks")
+  isLocked      Boolean   @default(false) @map("is_locked")
+  lockedAt      DateTime? @map("locked_at")
+  lockedBy      Int?      @map("locked_by")
+  description   String?   @db.Text
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  
+  // Relationships
+  examType      ExamType       @relation(fields: [examTypeId], references: [id])
+  class         Class          @relation(fields: [classId], references: [id])
+  subject       Subject        @relation(fields: [subjectId], references: [id])
+  academicYear  AcademicYear   @relation(fields: [academicYearId], references: [id])
+  results       ExamResult[]
+  
+  @@index([classId])
+  @@index([subjectId])
+  @@index([examDate])
+  @@map("exams")
+}
+
+// Exam Results
+model ExamResult {
+  id            Int       @id @default(autoincrement())
+  examId        Int       @map("exam_id")
+  studentId     Int       @map("student_id")
+  marksObtained Decimal   @map("marks_obtained") @db.Decimal(5,2)
+  percentage    Float?    
+  grade         String?   @db.VarChar(5)
+  remark        String?   @db.Text
+  enteredBy     Int       @map("entered_by")
+  enteredAt     DateTime  @default(now()) @map("entered_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  
+  // Relationships
+  exam          Exam      @relation(fields: [examId], references: [id])
+  student       Student   @relation(fields: [studentId], references: [id])
+  
+  @@unique([examId, studentId])
+  @@index([examId])
+  @@index([studentId])
+  @@map("exam_results")
+}
+
+// Grade Scale
+model GradeScale {
+  id            Int       @id @default(autoincrement())
+  grade         String    @unique @db.VarChar(5)
+  minPercentage Float     @map("min_percentage")
+  maxPercentage Float     @map("max_percentage")
+  description   String?   @db.Text
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  
+  @@map("grade_scales")
 }

@@ -1,14 +1,17 @@
+import React from 'react';
+import { BrowserRouter } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import AppRoutes from './routes';
+import './index.css';
 
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import Home from './pages/Home';
-const App = () => {
+const App: React.FC = () => {
   return (
-   <BrowserRouter>
-   <Routes>
-    <Route path='/' element={<Home />} />
-   </Routes>
-   </BrowserRouter>
-  )
-}
+    <BrowserRouter>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </BrowserRouter>
+  );
+};
 
-export default App
+export default App;

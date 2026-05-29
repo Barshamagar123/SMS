@@ -7,6 +7,7 @@ import helmet from 'helmet';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+
 import authRoutes from './routes/authRoutes.js';
 import classRoutes from './routes/classRoutes.js';
 import subjectRoutes from './routes/subjectRoutes.js';
@@ -14,6 +15,8 @@ import teacherAssignmentRoutes from './routes/teacherAssignmentRoutes.js';
 import attendanceRoutes from './routes/attendanceRoutes.js';
 import holidayRoutes from './routes/holidayRoutes.js';
 import examRoutes from './routes/examRoutes.js';
+import reportCardRoutes from './routes/reportCardRoutes.js';
+
 
 
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
@@ -26,6 +29,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3000;
+
 
 // ==================== MIDDLEWARE ====================
 app.use(helmet());
@@ -52,6 +56,8 @@ app.use('/api/holidays', holidayRoutes);
 app.use('/api/exams', examRoutes);
 
 
+app.use('/api/report-cards', reportCardRoutes);
+
 
 // Health check
 app.get('/health', (req, res) => {
@@ -62,13 +68,15 @@ app.get('/health', (req, res) => {
   });
 });
 
+
+
 // 404 handler
 app.use(notFoundHandler);
 
 // Global error handler
 app.use(errorHandler);
 
-// ==================== START SERVER ====================
+
 async function startServer() {
   try {
     await prisma.$connect();

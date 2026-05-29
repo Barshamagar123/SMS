@@ -12,6 +12,7 @@ import teacherAssignmentRoutes from './routes/teacherAssignmentRoutes.js';
 import attendanceRoutes from './routes/attendanceRoutes.js';
 import holidayRoutes from './routes/holidayRoutes.js';
 import examRoutes from './routes/examRoutes.js';
+import reportCardRoutes from './routes/reportCardRoutes.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { globalLimiter } from './middleware/rateLimitMiddleware.js';
 import { PrismaClient } from '@prisma/client';
@@ -40,6 +41,7 @@ app.use('/api/teacher-assignments', teacherAssignmentRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/holidays', holidayRoutes);
 app.use('/api/exams', examRoutes);
+app.use('/api/report-cards', reportCardRoutes);
 // Health check
 app.get('/health', (req, res) => {
     res.json({
@@ -52,7 +54,6 @@ app.get('/health', (req, res) => {
 app.use(notFoundHandler);
 // Global error handler
 app.use(errorHandler);
-// ==================== START SERVER ====================
 async function startServer() {
     try {
         await prisma.$connect();

@@ -4,22 +4,22 @@ export declare class ExamService {
         description?: string;
         weightage?: number;
     }): Promise<{
+        id: number;
         name: string;
-        description: string | null;
-        weightage: number | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        id: number;
+        description: string | null;
+        weightage: number | null;
     }>;
     static getAllExamTypes(): Promise<{
+        id: number;
         name: string;
-        description: string | null;
-        weightage: number | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        id: number;
+        description: string | null;
+        weightage: number | null;
     }[]>;
     static createExam(data: {
         examTypeId: number;
@@ -32,100 +32,101 @@ export declare class ExamService {
         passingMarks: number;
         description?: string;
     }): Promise<{
-        examType: {
+        subject: {
+            id: number;
             name: string;
-            description: string | null;
-            weightage: number | null;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            id: number;
+            code: string;
+            description: string | null;
         };
         class: {
-            name: string;
             id: number;
+            name: string;
             section: string;
         };
-        subject: {
+        examType: {
+            id: number;
             name: string;
-            description: string | null;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            id: number;
-            code: string;
+            description: string | null;
+            weightage: number | null;
         };
     } & {
+        id: number;
         name: string;
-        description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        id: number;
+        academicYearId: number;
+        classId: number;
+        subjectId: number;
+        description: string | null;
+        examTypeId: number;
         examDate: Date;
         maxMarks: number;
         passingMarks: number;
         isLocked: boolean;
         lockedAt: Date | null;
         lockedBy: number | null;
-        examTypeId: number;
-        classId: number;
-        subjectId: number;
-        academicYearId: number;
     }>;
     static getExamsByClass(classId: number, academicYearId: number): Promise<({
-        examType: {
+        subject: {
+            id: number;
             name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            code: string;
+            description: string | null;
+        };
+        examType: {
+            id: number;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
             description: string | null;
             weightage: number | null;
-            isActive: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-            id: number;
-        };
-        subject: {
-            name: string;
-            description: string | null;
-            isActive: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-            id: number;
-            code: string;
         };
         results: ({
             student: {
                 user: {
-                    name: string;
-                    isActive: boolean;
-                    createdAt: Date;
-                    updatedAt: Date;
                     id: number;
-                    phone: string | null;
                     email: string;
                     password: string;
+                    name: string;
+                    phone: string | null;
                     role: import("@prisma/client").$Enums.RoleEnum;
                     status: import("@prisma/client").$Enums.UserStatus;
+                    isActive: boolean;
                     isFirstLogin: boolean;
                     failedAttempts: number;
                     lockedUntil: Date | null;
                     lastLoginAt: Date | null;
+                    createdAt: Date;
+                    updatedAt: Date;
                 };
             } & {
+                id: number;
+                phone: string | null;
                 isActive: boolean;
                 createdAt: Date;
                 updatedAt: Date | null;
-                id: number;
+                userId: number;
+                profilePhoto: string | null;
+                address: string | null;
                 classId: number;
                 rollNumber: string;
-                userId: number;
                 dateOfBirth: Date | null;
                 gender: import("@prisma/client").$Enums.Gender | null;
                 bloodGroup: string | null;
                 nationality: string | null;
                 religion: string | null;
-                address: string | null;
                 city: string | null;
                 state: string | null;
-                phone: string | null;
                 fatherName: string | null;
                 motherName: string | null;
                 parentPhone: string | null;
@@ -133,77 +134,76 @@ export declare class ExamService {
                 admissionDate: Date;
                 previousSchool: string | null;
                 previousClass: string | null;
-                profilePhoto: string | null;
             };
         } & {
-            updatedAt: Date;
             id: number;
-            examId: number;
+            updatedAt: Date;
             studentId: number;
+            remark: string | null;
+            examId: number;
             marksObtained: import("@prisma/client/runtime/library").Decimal;
             percentage: number | null;
             grade: string | null;
-            remark: string | null;
             enteredBy: number;
             enteredAt: Date;
         })[];
     } & {
+        id: number;
         name: string;
-        description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        id: number;
+        academicYearId: number;
+        classId: number;
+        subjectId: number;
+        description: string | null;
+        examTypeId: number;
         examDate: Date;
         maxMarks: number;
         passingMarks: number;
         isLocked: boolean;
         lockedAt: Date | null;
         lockedBy: number | null;
-        examTypeId: number;
-        classId: number;
-        subjectId: number;
-        academicYearId: number;
     })[]>;
     static getExamsForTeacher(teacherUserId: number, academicYearId: number): Promise<({
-        examType: {
+        subject: {
+            id: number;
             name: string;
-            description: string | null;
-            weightage: number | null;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            id: number;
+            code: string;
+            description: string | null;
         };
         class: {
-            name: string;
             id: number;
+            name: string;
             section: string;
         };
-        subject: {
+        examType: {
+            id: number;
             name: string;
-            description: string | null;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            id: number;
-            code: string;
+            description: string | null;
+            weightage: number | null;
         };
     } & {
+        id: number;
         name: string;
-        description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        id: number;
+        academicYearId: number;
+        classId: number;
+        subjectId: number;
+        description: string | null;
+        examTypeId: number;
         examDate: Date;
         maxMarks: number;
         passingMarks: number;
         isLocked: boolean;
         lockedAt: Date | null;
         lockedBy: number | null;
-        examTypeId: number;
-        classId: number;
-        subjectId: number;
-        academicYearId: number;
     })[]>;
     static getStudentsForMarksEntry(examId: number): Promise<{
         studentId: number;
@@ -219,14 +219,14 @@ export declare class ExamService {
         marksObtained: number;
         remark?: string;
     }[], enteredBy: number): Promise<{
-        updatedAt: Date;
         id: number;
-        examId: number;
+        updatedAt: Date;
         studentId: number;
+        remark: string | null;
+        examId: number;
         marksObtained: import("@prisma/client/runtime/library").Decimal;
         percentage: number | null;
         grade: string | null;
-        remark: string | null;
         enteredBy: number;
         enteredAt: Date;
     }[]>;
@@ -263,38 +263,38 @@ export declare class ExamService {
         }[];
     }>;
     static lockExam(examId: number, lockedBy: number): Promise<{
+        id: number;
         name: string;
-        description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        id: number;
+        academicYearId: number;
+        classId: number;
+        subjectId: number;
+        description: string | null;
+        examTypeId: number;
         examDate: Date;
         maxMarks: number;
         passingMarks: number;
         isLocked: boolean;
         lockedAt: Date | null;
         lockedBy: number | null;
-        examTypeId: number;
-        classId: number;
-        subjectId: number;
-        academicYearId: number;
     }>;
     static unlockExam(examId: number): Promise<{
+        id: number;
         name: string;
-        description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        id: number;
+        academicYearId: number;
+        classId: number;
+        subjectId: number;
+        description: string | null;
+        examTypeId: number;
         examDate: Date;
         maxMarks: number;
         passingMarks: number;
         isLocked: boolean;
         lockedAt: Date | null;
         lockedBy: number | null;
-        examTypeId: number;
-        classId: number;
-        subjectId: number;
-        academicYearId: number;
     }>;
     static getStudentExamResults(studentId: number, academicYearId?: number): Promise<{
         examId: number;

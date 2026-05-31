@@ -2,7 +2,6 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
-import Footer from './Footer';
 
 const Layout: React.FC = () => {
   return (
@@ -11,9 +10,8 @@ const Layout: React.FC = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
         <main className="flex-1 overflow-y-auto p-6">
-          <Outlet />  {/* ← This is where dashboard content goes */}
+          <Outlet />
         </main>
-        <Footer />
       </div>
     </div>
   );

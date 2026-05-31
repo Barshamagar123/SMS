@@ -1,5 +1,3 @@
-// ================= authService.ts =================
-
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
@@ -85,6 +83,7 @@ export default class AuthService {
         email: data.email,
         password: hashed,
         name: data.name,
+        phone: data.phone,
         role: 'ADMIN',
         status: 'ACTIVE',
         isActive: true
@@ -715,11 +714,24 @@ export default class AuthService {
     });
   }
 
-  // ================= DELETE USER =================
+  // ================= DELETE USER (ENHANCED - UPDATED) =================
   static async deleteUser(id: number) {
+    // First check if user exists
+    const user = await prisma.user.findUnique({
+      where: { id }
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Soft delete - update isActive to false AND status to 'REJECTED'
     return prisma.user.update({
       where: { id },
-      data: { isActive: false }
+      data: { 
+        isActive: false,
+        status: 'REJECTED'
+      }
     });
   }
 
@@ -897,6 +909,365 @@ export default class AuthService {
     return updatedStudent;
   }
 
-}
+  // ================= NEW: SUPERADMIN/ADMIN STUDENT MANAGEMENT METHODS =================
 
-// No duplicate export default here - it's already at the top
+  // ================= GET ALL STUDENTS WITH FULL DETAILS =================
+  static async getAllStudentsWithDetails() {
+    const students = await prisma.student.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            isActive: true,
+            isFirstLogin: true,
+            status: true,
+            createdAt: true,
+            lastLoginAt: true
+          }
+        },
+        class: {
+          select: {
+            id: true,
+            name: true,
+            section: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    return students.map(student => ({
+      id: student.user.id,
+      name: student.user.name,
+      email: student.user.email,
+      phone: student.user.phone,
+      role: 'STUDENT',
+      isActive: student.user.isActive,
+      isFirstLogin: student.user.isFirstLogin,
+      status: student.user.status,
+      createdAt: student.user.createdAt,
+      lastLoginAt: student.user.lastLoginAt,
+      student: {
+        id: student.id,
+        rollNumber: student.rollNumber,
+        classId: student.classId,
+        dateOfBirth: student.dateOfBirth,
+        gender: student.gender,
+        bloodGroup: student.bloodGroup,
+        nationality: student.nationality,
+        religion: student.religion,
+        address: student.address,
+        city: student.city,
+        state: student.state,
+        phone: student.phone,
+        fatherName: student.fatherName,
+        motherName: student.motherName,
+        parentPhone: student.parentPhone,
+        parentEmail: student.parentEmail,
+        admissionDate: student.admissionDate,
+        previousSchool: student.previousSchool,
+        previousClass: student.previousClass,
+        profilePhoto: student.profilePhoto,
+        isActive: student.isActive,
+        class: student.class ? {
+          id: student.class.id,
+          name: student.class.name,
+          section: student.class.section
+        } : null
+      }
+    }));
+  }
+
+  // ================= GET ALL ADMINS =================
+  static async getAllAdmins() {
+    const admins = await prisma.user.findMany({
+      where: {
+        role: 'ADMIN'
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        isActive: true,
+        isFirstLogin: true,
+        status: true,
+        createdAt: true,
+        lastLoginAt: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    return admins;
+  }
+
+  // ================= GET STUDENT DETAILS BY ID =================
+  static async getStudentDetailsById(studentId: number) {
+    const student = await prisma.student.findUnique({
+      where: { id: studentId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            isActive: true,
+            isFirstLogin: true,
+            status: true,
+            createdAt: true,
+            lastLoginAt: true
+          }
+        },
+        class: {
+          select: {
+            id: true,
+            name: true,
+            section: true
+          }
+        }
+      }
+    });
+
+    if (!student) {
+      throw new Error('Student not found');
+    }
+
+    return {
+      id: student.user.id,
+      name: student.user.name,
+      email: student.user.email,
+      phone: student.user.phone,
+      role: 'STUDENT',
+      isActive: student.user.isActive,
+      isFirstLogin: student.user.isFirstLogin,
+      status: student.user.status,
+      createdAt: student.user.createdAt,
+      lastLoginAt: student.user.lastLoginAt,
+      student: {
+        id: student.id,
+        rollNumber: student.rollNumber,
+        classId: student.classId,
+        dateOfBirth: student.dateOfBirth,
+        gender: student.gender,
+        bloodGroup: student.bloodGroup,
+        nationality: student.nationality,
+        religion: student.religion,
+        address: student.address,
+        city: student.city,
+        state: student.state,
+        phone: student.phone,
+        fatherName: student.fatherName,
+        motherName: student.motherName,
+        parentPhone: student.parentPhone,
+        parentEmail: student.parentEmail,
+        admissionDate: student.admissionDate,
+        previousSchool: student.previousSchool,
+        previousClass: student.previousClass,
+        profilePhoto: student.profilePhoto,
+        isActive: student.isActive,
+        class: student.class ? {
+          id: student.class.id,
+          name: student.class.name,
+          section: student.class.section
+        } : null
+      }
+    };
+  }
+
+  // ================= GET STUDENT PHOTO BY ID =================
+  static async getStudentPhotoById(studentId: number) {
+    const student = await prisma.student.findUnique({
+      where: { id: studentId },
+      select: { profilePhoto: true }
+    });
+
+    if (!student || !student.profilePhoto) {
+      return null;
+    }
+
+    const photoPath = path.join(process.cwd(), student.profilePhoto);
+    
+    if (!fs.existsSync(photoPath)) {
+      return null;
+    }
+
+    return photoPath;
+  }
+
+  // ================= UPDATE STUDENT STATUS =================
+  static async updateStudentStatus(studentId: number, isActive: boolean) {
+    // First find the student to get userId
+    const student = await prisma.student.findUnique({
+      where: { id: studentId },
+      include: { user: true }
+    });
+
+    if (!student) {
+      throw new Error('Student not found');
+    }
+
+    // Update user active status
+    const updatedUser = await prisma.user.update({
+      where: { id: student.userId },
+      data: { isActive: isActive }
+    });
+
+    // Update student isActive status
+    const updatedStudent = await prisma.student.update({
+      where: { id: studentId },
+      data: { isActive: isActive }
+    });
+
+    return {
+      userId: updatedUser.id,
+      studentId: updatedStudent.id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      isActive: updatedUser.isActive
+    };
+  }
+
+  // ================= RESET STUDENT PASSWORD =================
+  static async resetStudentPassword(studentId: number) {
+    const student = await prisma.student.findUnique({
+      where: { id: studentId },
+      include: { user: true }
+    });
+
+    if (!student) {
+      throw new Error('Student not found');
+    }
+
+    // Generate new random password
+    const newPassword = `Student@${Math.random().toString(36).slice(-6)}`;
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update user password
+    await prisma.user.update({
+      where: { id: student.userId },
+      data: {
+        password: hashedPassword,
+        isFirstLogin: true
+      }
+    });
+
+    return {
+      studentId: student.id,
+      name: student.user.name,
+      email: student.user.email,
+      newPassword: newPassword
+    };
+  }
+
+  // ================= GET STUDENT STATISTICS =================
+  static async getStudentStatistics() {
+    const totalStudents = await prisma.student.count();
+    const activeStudents = await prisma.student.count({
+      where: { isActive: true }
+    });
+    const maleStudents = await prisma.student.count({
+      where: { gender: 'MALE' }
+    });
+    const femaleStudents = await prisma.student.count({
+      where: { gender: 'FEMALE' }
+    });
+    
+    // Students by class
+    const studentsByClass = await prisma.$queryRaw`
+      SELECT c.name, c.section, COUNT(s.id) as count
+      FROM students s
+      JOIN classes c ON s.class_id = c.id
+      GROUP BY c.id, c.name, c.section
+      ORDER BY c.name, c.section
+    `;
+
+    // Students by blood group
+    const studentsByBloodGroup = await prisma.$queryRaw`
+      SELECT blood_group, COUNT(*) as count
+      FROM students
+      WHERE blood_group IS NOT NULL
+      GROUP BY blood_group
+    `;
+
+    // New students this month
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    
+    const newStudentsThisMonth = await prisma.student.count({
+      where: {
+        createdAt: {
+          gte: startOfMonth
+        }
+      }
+    });
+
+    return {
+      total: totalStudents,
+      active: activeStudents,
+      inactive: totalStudents - activeStudents,
+      gender: {
+        male: maleStudents,
+        female: femaleStudents,
+        other: totalStudents - maleStudents - femaleStudents
+      },
+      newThisMonth: newStudentsThisMonth,
+      byClass: studentsByClass,
+      byBloodGroup: studentsByBloodGroup
+    };
+  }
+
+  // ================= EXPORT STUDENTS DATA =================
+  static async exportStudentsData(format: string) {
+    const students = await this.getAllStudentsWithDetails();
+    
+    // Create CSV header
+    const headers = [
+      'Name', 'Email', 'Phone', 'Roll Number', 'Class', 'Section',
+      'Date of Birth', 'Gender', 'Blood Group', 'Nationality', 'Religion',
+      'Father Name', 'Mother Name', 'Parent Phone', 'Parent Email',
+      'Address', 'City', 'State', 'Admission Date', 'Status'
+    ];
+    
+    // Create CSV rows
+    const rows = students.map(s => [
+      s.name,
+      s.email,
+      s.phone || '',
+      s.student?.rollNumber || '',
+      s.student?.class?.name || '',
+      s.student?.class?.section || '',
+      s.student?.dateOfBirth ? new Date(s.student.dateOfBirth).toLocaleDateString() : '',
+      s.student?.gender || '',
+      s.student?.bloodGroup || '',
+      s.student?.nationality || '',
+      s.student?.religion || '',
+      s.student?.fatherName || '',
+      s.student?.motherName || '',
+      s.student?.parentPhone || '',
+      s.student?.parentEmail || '',
+      s.student?.address || '',
+      s.student?.city || '',
+      s.student?.state || '',
+      s.student?.admissionDate ? new Date(s.student.admissionDate).toLocaleDateString() : '',
+      s.isActive ? 'Active' : 'Inactive'
+    ]);
+    
+    // Convert to CSV string
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+    
+    return csvContent;
+  }
+
+}

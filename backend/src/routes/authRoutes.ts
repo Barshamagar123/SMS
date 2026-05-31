@@ -60,6 +60,14 @@ router.post(
   authController.createAdmin
 );
 
+// GET ALL ADMINS (SuperAdmin only)
+router.get(
+  '/superadmin/admins',
+  authenticate,
+  requireSuperAdmin,
+  authController.getAllAdmins
+);
+
 // ========================= TEACHER SELF ROUTES (SPECIFIC - MUST COME FIRST) =========================
 
 // Get own teacher profile
@@ -206,5 +214,63 @@ router.post('/logout', authenticate, authController.logout);
 
 // CHANGE PASSWORD
 router.post('/change-password', authenticate, authController.changePassword);
+
+// ========================= NEW: SUPERADMIN/ADMIN STUDENT MANAGEMENT ROUTES =========================
+
+// GET ALL STUDENTS WITH FULL DETAILS (Admin & SuperAdmin)
+router.get(
+  '/superadmin/students',
+  authenticate,
+  requireAdmin,
+  authController.getAllStudentsWithDetails
+);
+
+// GET STUDENT STATISTICS (Admin & SuperAdmin)
+router.get(
+  '/students/statistics',
+  authenticate,
+  requireAdmin,
+  authController.getStudentStatistics
+);
+
+// EXPORT STUDENTS DATA (Admin & SuperAdmin)
+router.get(
+  '/students/export',
+  authenticate,
+  requireAdmin,
+  authController.exportStudentsData
+);
+
+// GET STUDENT DETAILS BY ID (Admin & SuperAdmin)
+router.get(
+  '/students/:id/details',
+  authenticate,
+  requireAdmin,
+  authController.getStudentDetailsById
+);
+
+// GET STUDENT PHOTO BY ID (Admin & SuperAdmin)
+router.get(
+  '/students/:id/photo',
+  authenticate,
+  requireAdmin,
+  authController.getStudentPhotoById
+);
+
+// UPDATE STUDENT STATUS (Activate/Deactivate)
+router.patch(
+  '/students/:id/status',
+  authenticate,
+  requireAdmin,
+  authController.updateStudentStatus
+);
+
+// RESET STUDENT PASSWORD (Admin & SuperAdmin)
+router.post(
+  '/students/:id/reset-password',
+  authenticate,
+  requireAdmin,
+  authController.resetStudentPassword
+);
 
 export default router;

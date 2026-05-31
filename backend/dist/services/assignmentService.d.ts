@@ -19,13 +19,13 @@ export declare class AssignmentService {
             displayName: string;
         };
         subject: {
+            id: number;
             name: string;
-            description: string | null;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            id: number;
             code: string;
+            description: string | null;
         };
         academicYear: string;
         isPrimary: boolean;
@@ -45,13 +45,13 @@ export declare class AssignmentService {
             displayName: string;
         };
         subject: {
+            id: number;
             name: string;
-            description: string | null;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            id: number;
             code: string;
+            description: string | null;
         };
         academicYear: string;
         isPrimary: boolean;

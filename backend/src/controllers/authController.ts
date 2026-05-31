@@ -67,7 +67,7 @@ class AuthController {
 
     try {
 
-      const { email, password, name } = req.body;
+      const { email, password, name, phone } = req.body;
 
       // Validate required fields
       const missingFields: string[] = [];
@@ -1371,6 +1371,266 @@ class AuthController {
       return res.status(500).json({
         success: false,
         message: 'Internal server error'
+      });
+    }
+  };
+
+
+  // ================= NEW: SUPERADMIN/ADMIN STUDENT MANAGEMENT METHODS =================
+
+  // ================= GET ALL STUDENTS WITH FULL DETAILS =================
+  getAllStudentsWithDetails = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+    try {
+      // Check if superadmin or admin
+      if (req.user?.role !== 'SUPERADMIN' && req.user?.role !== 'ADMIN') {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. Admin or Superadmin only.'
+        });
+      }
+
+      const students = await AuthService.getAllStudentsWithDetails();
+      
+      res.json({
+        success: true,
+        data: students,
+        timestamp: new Date().toISOString()
+      });
+    } catch (err: any) {
+      res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+  };
+
+  // ================= GET ALL ADMINS (SUPERADMIN ONLY) =================
+  getAllAdmins = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+    try {
+      if (req.user?.role !== 'SUPERADMIN') {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. Superadmin only.'
+        });
+      }
+
+      const admins = await AuthService.getAllAdmins();
+      
+      res.json({
+        success: true,
+        data: admins,
+        timestamp: new Date().toISOString()
+      });
+    } catch (err: any) {
+      res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+  };
+
+  // ================= GET STUDENT DETAILS BY ID =================
+  getStudentDetailsById = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+    try {
+      const { id } = req.params;
+      const studentId = toInt(id);
+
+      if (isNaN(studentId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid student ID'
+        });
+      }
+
+      // Check permission
+      if (req.user?.role !== 'SUPERADMIN' && req.user?.role !== 'ADMIN') {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+
+      const student = await AuthService.getStudentDetailsById(studentId);
+      
+      res.json({
+        success: true,
+        data: student,
+        timestamp: new Date().toISOString()
+      });
+    } catch (err: any) {
+      res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+  };
+
+  // ================= GET STUDENT PHOTO BY ID (For Admin/Superadmin) =================
+  getStudentPhotoById = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+    try {
+      const { id } = req.params;
+      const studentId = toInt(id);
+
+      if (isNaN(studentId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid student ID'
+        });
+      }
+
+      const photoPath = await AuthService.getStudentPhotoById(studentId);
+
+      if (!photoPath) {
+        return res.status(404).json({
+          success: false,
+          message: 'Profile photo not found'
+        });
+      }
+
+      return res.sendFile(photoPath);
+    } catch (err: any) {
+      res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+  };
+
+  // ================= UPDATE STUDENT STATUS (ACTIVATE/DEACTIVATE) =================
+  updateStudentStatus = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+    try {
+      const { id } = req.params;
+      const { isActive } = req.body;
+      const studentId = toInt(id);
+
+      if (isNaN(studentId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid student ID'
+        });
+      }
+
+      if (typeof isActive !== 'boolean') {
+        return res.status(400).json({
+          success: false,
+          message: 'isActive must be a boolean'
+        });
+      }
+
+      const student = await AuthService.updateStudentStatus(studentId, isActive);
+      
+      res.json({
+        success: true,
+        message: `Student ${isActive ? 'activated' : 'deactivated'} successfully`,
+        data: student,
+        timestamp: new Date().toISOString()
+      });
+    } catch (err: any) {
+      res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+  };
+
+  // ================= RESET STUDENT PASSWORD =================
+  resetStudentPassword = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+    try {
+      const { id } = req.params;
+      const studentId = toInt(id);
+
+      if (isNaN(studentId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid student ID'
+        });
+      }
+
+      const result = await AuthService.resetStudentPassword(studentId);
+      
+      res.json({
+        success: true,
+        message: 'Password reset successfully',
+        data: result,
+        timestamp: new Date().toISOString()
+      });
+    } catch (err: any) {
+      res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+  };
+
+  // ================= GET STUDENT STATISTICS =================
+  getStudentStatistics = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+    try {
+      if (req.user?.role !== 'SUPERADMIN' && req.user?.role !== 'ADMIN') {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+
+      const stats = await AuthService.getStudentStatistics();
+      
+      res.json({
+        success: true,
+        data: stats,
+        timestamp: new Date().toISOString()
+      });
+    } catch (err: any) {
+      res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+  };
+
+  // ================= EXPORT STUDENTS DATA =================
+  exportStudentsData = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+    try {
+      if (req.user?.role !== 'SUPERADMIN' && req.user?.role !== 'ADMIN') {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+
+      const { format = 'csv' } = req.query;
+      const csvData = await AuthService.exportStudentsData(format as string);
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename=students_${new Date().toISOString().split('T')[0]}.csv`);
+      res.send(csvData);
+    } catch (err: any) {
+      res.status(400).json({
+        success: false,
+        message: err.message
       });
     }
   };

@@ -1,54 +1,149 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import { Bell, User, ChevronDown, Settings, LogOut, Shield, School, Users, BookOpen } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Header: React.FC = () => {
   const { user, logout } = useAuth();
-  const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [notificationCount, setNotificationCount] = useState(3);
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const getRoleBadgeColor = () => {
+    switch (user?.role) {
+      case 'SUPERADMIN': return 'bg-purple-100 text-purple-700';
+      case 'ADMIN': return 'bg-blue-100 text-blue-700';
+      case 'TEACHER': return 'bg-green-100 text-green-700';
+      case 'STUDENT': return 'bg-orange-100 text-orange-700';
+      case 'PARENT': return 'bg-teal-100 text-teal-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  const getRoleIcon = () => {
+    switch (user?.role) {
+      case 'SUPERADMIN': return <Shield size={16} />;
+      case 'ADMIN': return <School size={16} />;
+      case 'TEACHER': return <Users size={16} />;
+      case 'STUDENT': return <BookOpen size={16} />;
+      default: return <User size={16} />;
+    }
+  };
 
   const handleLogout = async () => {
     await logout();
     navigate('/login');
   };
 
+  const formatTime = () => {
+    return currentTime.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: true 
+    });
+  };
+
+  const formatDate = () => {
+    return currentTime.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
   return (
-    <header className="bg-white shadow-md px-6 py-3 flex justify-between items-center">
-      <div className="flex items-center">
-        <h2 className="text-xl font-semibold text-gray-800">
-          Welcome, {user?.name}
-        </h2>
-      </div>
-      
-      <div className="flex items-center space-x-4">
-        <div className="relative">
-          <button
-            onClick={() => setShowDropdown(!showDropdown)}
-            className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center focus:outline-none"
-          >
-            <span className="text-sm font-semibold">{user?.name?.charAt(0).toUpperCase()}</span>
-          </button>
-          
-          {showDropdown && (
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50 border">
-              <button
-                onClick={() => {
-                  setShowDropdown(false);
-                  navigate('/profile');
-                }}
-                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              >
-                Profile
-              </button>
-              <hr className="my-1" />
-              <button
-                onClick={handleLogout}
-                className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-              >
-                Logout
-              </button>
+    <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
+      <div className="px-6 py-3">
+        <div className="flex items-center justify-between">
+          {/* Left Side - Welcome Message */}
+          <div className="flex-1">
+            <h1 className="text-xl font-semibold text-gray-800">
+              Welcome back, {user?.name}!
+            </h1>
+            <div className="flex items-center gap-3 mt-1">
+              <p className="text-sm text-gray-500">{formatDate()}</p>
+              <span className="text-gray-300">•</span>
+              <p className="text-sm text-gray-500">{formatTime()}</p>
             </div>
-          )}
+          </div>
+
+          {/* Right Side - Actions */}
+          <div className="flex items-center gap-4">
+            {/* Role Badge */}
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${getRoleBadgeColor()}`}>
+              {getRoleIcon()}
+              <span className="text-xs font-medium capitalize">{user?.role}</span>
+            </div>
+
+            {/* Notifications */}
+            <button className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+              <Bell size={20} />
+              {notificationCount > 0 && (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              )}
+            </button>
+
+            {/* User Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowDropdown(!showDropdown)}
+                className="flex items-center gap-3 p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <div className="w-9 h-9 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold shadow-sm">
+                  {user?.name?.charAt(0).toUpperCase()}
+                </div>
+                <div className="hidden md:block text-left">
+                  <p className="text-sm font-medium text-gray-800">{user?.name}</p>
+                  <p className="text-xs text-gray-500">{user?.email}</p>
+                </div>
+                <ChevronDown size={16} className="text-gray-400" />
+              </button>
+
+              {showDropdown && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50 animate-fade-in">
+                  <div className="px-4 py-3 border-b border-gray-100">
+                    <p className="text-sm font-medium text-gray-800">{user?.name}</p>
+                    <p className="text-xs text-gray-500">{user?.email}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowDropdown(false);
+                      navigate('/profile');
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition"
+                  >
+                    <User size={16} />
+                    Profile Settings
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowDropdown(false);
+                      navigate('/settings');
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition"
+                  >
+                    <Settings size={16} />
+                    Account Settings
+                  </button>
+                  <hr className="my-1" />
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition"
+                  >
+                    <LogOut size={16} />
+                    Sign Out
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </header>

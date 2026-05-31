@@ -32,6 +32,14 @@ declare class AuthController {
     uploadOwnProfilePhoto: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
     getOwnProfilePhoto: (req: AuthenticatedRequest, res: Response) => Promise<void | Response<any, Record<string, any>>>;
     deleteOwnProfilePhoto: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+    getAllStudentsWithDetails: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+    getAllAdmins: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+    getStudentDetailsById: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+    getStudentPhotoById: (req: AuthenticatedRequest, res: Response) => Promise<void | Response<any, Record<string, any>>>;
+    updateStudentStatus: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+    resetStudentPassword: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+    getStudentStatistics: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+    exportStudentsData: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
 }
 declare const _default: AuthController;
 export default _default;

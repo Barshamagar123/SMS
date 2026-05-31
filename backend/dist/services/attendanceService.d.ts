@@ -25,14 +25,14 @@ export declare class AttendanceService {
         status: AttendanceStatus;
         remark?: string;
     }[], markedBy: number): Promise<{
+        id: number;
+        status: import("@prisma/client").$Enums.AttendanceStatus;
         createdAt: Date;
         updatedAt: Date;
-        id: number;
         classId: number;
         studentId: number;
-        remark: string | null;
-        status: import("@prisma/client").$Enums.AttendanceStatus;
         date: Date;
+        remark: string | null;
         markedBy: number;
     }[]>;
     static getTeacherClasses(teacherUserId: number): Promise<{
@@ -79,27 +79,27 @@ export declare class AttendanceService {
         holidayName?: string;
     }>;
     static getAllHolidays(year?: number, month?: number): Promise<{
+        id: number;
         name: string;
-        description: string | null;
         isActive: boolean;
         createdAt: Date;
-        id: number;
+        description: string | null;
         date: Date;
     }[]>;
     static addHoliday(name: string, date: string, description?: string): Promise<{
+        id: number;
         name: string;
-        description: string | null;
         isActive: boolean;
         createdAt: Date;
-        id: number;
+        description: string | null;
         date: Date;
     }>;
     static deleteHoliday(id: number): Promise<{
+        id: number;
         name: string;
-        description: string | null;
         isActive: boolean;
         createdAt: Date;
-        id: number;
+        description: string | null;
         date: Date;
     }>;
     static getMonthlyReportWithHolidays(classId: number, month: number, year: number): Promise<{

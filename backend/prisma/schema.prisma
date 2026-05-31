@@ -192,6 +192,8 @@ enum UserStatus {
   PENDING
   ACTIVE
   REJECTED
+    INACTIVE   // ← Add this if needed
+  DEACTIVATED // ← Or add this
 }
 
 enum OtpPurpose {

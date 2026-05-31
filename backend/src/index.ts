@@ -40,6 +40,14 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// ==================== STATIC FILE SERVING ====================
+// Check if uploads directory exists, create if not
+const uploadsDir = path.join(process.cwd(), 'uploads');
+const studentsUploadsDir = path.join(uploadsDir, 'students');
+const teachersUploadsDir = path.join(uploadsDir, 'teachers');
+
+
+
 // Serve static files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 

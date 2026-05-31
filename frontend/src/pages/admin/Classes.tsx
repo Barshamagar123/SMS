@@ -2,22 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { 
   Search, Eye, Edit, Trash2, X, RefreshCw, Plus,
   School, Users, BookOpen, ChevronLeft, ChevronRight,
-  Loader2, CheckCircle, XCircle, Filter
+  Loader2, Save, Link2, Unlink
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import CreateClassModal from '../../components/admin/CreateClassModal';
-
-interface ClassProfile {
-  id: number;
-  name: string;
-  section: string;
-  displayName: string;
-  studentCount?: number;
-  subjectCount?: number;
-  students?: any[];
-  subjects?: any[];
-  isActive?: boolean;
-}
 
 interface Class {
   id: number;
@@ -29,24 +17,44 @@ interface Class {
   isActive?: boolean;
 }
 
+interface Subject {
+  id: number;
+  name: string;
+  code: string;
+  description?: string;
+  isActive: boolean;
+}
+
+interface ClassSubject {
+  subjectId: number;
+  subject: Subject;
+}
+
 const AdminClasses: React.FC = () => {
   const [classes, setClasses] = useState<Class[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [classSubjects, setClassSubjects] = useState<ClassSubject[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showSubjectsModal, setShowSubjectsModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [assigningSubject, setAssigningSubject] = useState(false);
+  const [removingSubject, setRemovingSubject] = useState<number | null>(null);
   const [editFormData, setEditFormData] = useState({ name: '', section: '' });
   const [editLoading, setEditLoading] = useState(false);
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>('');
+  const [modalLoading, setModalLoading] = useState(false);
   
   const itemsPerPage = 10;
-  const BASE_URL = 'http://localhost:3000';
 
   useEffect(() => {
     fetchClasses();
+    fetchAllSubjects();
   }, []);
 
   const fetchClasses = async () => {
@@ -59,8 +67,7 @@ const AdminClasses: React.FC = () => {
       const data = await response.json();
       
       if (data.success) {
-        const classList = data.data || [];
-        setClasses(classList);
+        setClasses(data.data || []);
       } else {
         toast.error('Failed to fetch classes');
       }
@@ -69,6 +76,122 @@ const AdminClasses: React.FC = () => {
       toast.error('Failed to load classes');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAllSubjects = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch('http://localhost:3000/api/subjects', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setSubjects(data.data || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch subjects:', error);
+    }
+  };
+
+  const fetchClassSubjects = async (classId: number) => {
+    setModalLoading(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`http://localhost:3000/api/classes/${classId}/subjects`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        // Handle different possible response structures
+        let subjectsList = [];
+        if (data.data && Array.isArray(data.data.subjects)) {
+          subjectsList = data.data.subjects;
+        } else if (data.data && Array.isArray(data.data)) {
+          subjectsList = data.data;
+        } else if (Array.isArray(data.data)) {
+          subjectsList = data.data;
+        } else {
+          subjectsList = [];
+        }
+        setClassSubjects(subjectsList);
+      } else {
+        toast.error(data.message || 'Failed to fetch class subjects');
+        setClassSubjects([]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch class subjects:', error);
+      toast.error('Failed to load subjects for this class');
+      setClassSubjects([]);
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const handleAssignSubject = async () => {
+    if (!selectedClass || !selectedSubjectId) {
+      toast.error('Please select a subject');
+      return;
+    }
+
+    setAssigningSubject(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`http://localhost:3000/api/classes/${selectedClass.id}/subjects`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ subjectId: parseInt(selectedSubjectId) })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.success('Subject assigned to class successfully');
+        setSelectedSubjectId('');
+        await fetchClassSubjects(selectedClass.id);
+        await fetchClasses();
+      } else {
+        toast.error(data.message || 'Failed to assign subject');
+      }
+    } catch (error) {
+      console.error('Assign subject error:', error);
+      toast.error('Failed to assign subject');
+    } finally {
+      setAssigningSubject(false);
+    }
+  };
+
+  const handleRemoveSubject = async (subjectId: number) => {
+    if (!selectedClass) return;
+    if (!confirm('Remove this subject from the class?')) return;
+
+    setRemovingSubject(subjectId);
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`http://localhost:3000/api/classes/${selectedClass.id}/subjects/${subjectId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.success('Subject removed from class');
+        await fetchClassSubjects(selectedClass.id);
+        await fetchClasses();
+      } else {
+        toast.error(data.message || 'Failed to remove subject');
+      }
+    } catch (error) {
+      console.error('Remove subject error:', error);
+      toast.error('Failed to remove subject');
+    } finally {
+      setRemovingSubject(null);
     }
   };
 
@@ -92,6 +215,7 @@ const AdminClasses: React.FC = () => {
         toast.error(data.message || 'Failed to delete class');
       }
     } catch (error) {
+      console.error('Delete class error:', error);
       toast.error('Failed to delete class');
     } finally {
       setDeletingId(null);
@@ -139,9 +263,22 @@ const AdminClasses: React.FC = () => {
         toast.error(data.message || 'Failed to update class');
       }
     } catch (error) {
+      console.error('Update class error:', error);
       toast.error('Failed to update class');
     } finally {
       setEditLoading(false);
+    }
+  };
+
+  const handleOpenSubjectsModal = async (classItem: Class) => {
+    try {
+      setSelectedClass(classItem);
+      setShowSubjectsModal(true);
+      await fetchClassSubjects(classItem.id);
+    } catch (error) {
+      console.error('Error opening subjects modal:', error);
+      toast.error('Failed to open subject manager');
+      setShowSubjectsModal(false);
     }
   };
 
@@ -158,7 +295,12 @@ const AdminClasses: React.FC = () => {
   );
 
   const totalStudents = classes.reduce((sum, cls) => sum + (cls.studentCount || 0), 0);
-  const totalSubjects = classes.reduce((sum, cls) => sum + (cls.subjectCount || 0), 0);
+  const totalSubjectsCount = classes.reduce((sum, cls) => sum + (cls.subjectCount || 0), 0);
+
+  const assignedSubjectIds = classSubjects.map(cs => cs.subjectId);
+  const availableSubjects = subjects.filter(s => 
+    s.isActive && !assignedSubjectIds.includes(s.id)
+  );
 
   const ClassTableRow = ({ classItem }: { classItem: Class }) => {
     return (
@@ -197,6 +339,13 @@ const AdminClasses: React.FC = () => {
         <td className="px-4 py-3">
           <div className="flex items-center gap-2">
             <button 
+              onClick={() => handleOpenSubjectsModal(classItem)} 
+              className="p-1 text-purple-600 hover:bg-purple-50 rounded" 
+              title="Manage Subjects"
+            >
+              <Link2 size={16} />
+            </button>
+            <button 
               onClick={() => { setSelectedClass(classItem); setShowDetailsModal(true); }} 
               className="p-1 text-blue-600 hover:bg-blue-50 rounded" 
               title="View Details"
@@ -221,6 +370,105 @@ const AdminClasses: React.FC = () => {
           </div>
         </td>
       </tr>
+    );
+  };
+
+  const AssignSubjectsModal = () => {
+    if (!showSubjectsModal || !selectedClass) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowSubjectsModal(false)}>
+        <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-5 rounded-t-2xl">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-bold">Manage Subjects</h2>
+                <p className="text-purple-100 text-sm">{selectedClass.displayName} - Assigned Subjects</p>
+              </div>
+              <button onClick={() => setShowSubjectsModal(false)} className="p-2 hover:bg-white/20 rounded-lg">
+                <X size={20} />
+              </button>
+            </div>
+          </div>
+
+          <div className="p-6 space-y-6">
+            {modalLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 size={32} className="animate-spin text-purple-600" />
+              </div>
+            ) : (
+              <>
+                <div>
+                  <h3 className="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <BookOpen size={18} />
+                    Assigned Subjects ({classSubjects.length})
+                  </h3>
+                  {classSubjects.length === 0 ? (
+                    <div className="text-center py-8 bg-gray-50 rounded-lg">
+                      <p className="text-gray-500 text-sm">No subjects assigned yet</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {classSubjects.map((cs, index) => (
+                        <div key={cs.subjectId || index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div>
+                            <p className="font-medium text-gray-800">{cs.subject?.name || 'Unknown Subject'}</p>
+                            <p className="text-xs text-gray-500">{cs.subject?.code || 'N/A'}</p>
+                          </div>
+                          <button
+                            onClick={() => handleRemoveSubject(cs.subjectId)}
+                            disabled={removingSubject === cs.subjectId}
+                            className="p-1.5 text-red-600 hover:bg-red-100 rounded-lg transition disabled:opacity-50"
+                            title="Remove Subject"
+                          >
+                            {removingSubject === cs.subjectId ? (
+                              <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                              <Unlink size={16} />
+                            )}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="border-t pt-4">
+                  <h3 className="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <Plus size={18} />
+                    Add Subject to Class
+                  </h3>
+                  <div className="flex gap-3">
+                    <select
+                      value={selectedSubjectId}
+                      onChange={(e) => setSelectedSubjectId(e.target.value)}
+                      className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                    >
+                      <option value="">Select a subject...</option>
+                      {availableSubjects.map((subject) => (
+                        <option key={subject.id} value={subject.id}>
+                          {subject.name} ({subject.code})
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={handleAssignSubject}
+                      disabled={assigningSubject || !selectedSubjectId}
+                      className="px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {assigningSubject ? <Loader2 size={18} className="animate-spin" /> : <Link2 size={18} />}
+                      Assign
+                    </button>
+                  </div>
+                  {availableSubjects.length === 0 && classSubjects.length > 0 && (
+                    <p className="text-xs text-gray-500 mt-2">All subjects are already assigned to this class</p>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
     );
   };
 
@@ -279,16 +527,17 @@ const AdminClasses: React.FC = () => {
 
           <div className="sticky bottom-0 bg-gray-50 border-t p-4 flex justify-end gap-3">
             <button 
+              onClick={() => { setShowDetailsModal(false); handleOpenSubjectsModal(cls); }} 
+              className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg flex items-center gap-2"
+            >
+              <Link2 size={16} />
+              Manage Subjects
+            </button>
+            <button 
               onClick={() => { setShowDetailsModal(false); handleEditClass(cls); }} 
               className="px-4 py-2 bg-green-100 text-green-700 rounded-lg"
             >
               Edit Class
-            </button>
-            <button 
-              onClick={() => { setShowDetailsModal(false); handleDeleteClass(cls); }} 
-              className="px-4 py-2 bg-red-100 text-red-700 rounded-lg"
-            >
-              Delete Class
             </button>
           </div>
         </div>
@@ -374,7 +623,7 @@ const AdminClasses: React.FC = () => {
                 disabled={editLoading}
                 className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium flex items-center gap-2 disabled:opacity-50"
               >
-                {editLoading ? <Loader2 size={18} className="animate-spin" /> : <School size={18} />}
+                {editLoading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                 {editLoading ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
@@ -388,17 +637,16 @@ const AdminClasses: React.FC = () => {
     { title: 'Total Classes', value: classes.length, icon: <School size={20} />, color: 'bg-blue-500' },
     { title: 'Total Sections', value: classes.length, icon: <Users size={20} />, color: 'bg-green-500' },
     { title: 'Total Students', value: totalStudents, icon: <Users size={20} />, color: 'bg-purple-500' },
-    { title: 'Total Subjects', value: totalSubjects, icon: <BookOpen size={20} />, color: 'bg-orange-500' },
+    { title: 'Total Subjects', value: totalSubjectsCount, icon: <BookOpen size={20} />, color: 'bg-orange-500' },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Class Management</h1>
-            <p className="text-gray-500 text-sm mt-1">Manage classes, sections, and assignments</p>
+            <p className="text-gray-500 text-sm mt-1">Manage classes, sections, and subject assignments</p>
           </div>
           <div className="flex gap-3">
             <button 
@@ -418,7 +666,6 @@ const AdminClasses: React.FC = () => {
           </div>
         </div>
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {stats.map((stat, i) => (
             <div key={i} className={`${stat.color} rounded-xl p-4 text-white shadow-sm`}>
@@ -433,7 +680,6 @@ const AdminClasses: React.FC = () => {
           ))}
         </div>
 
-        {/* Search Bar */}
         <div className="bg-white rounded-xl shadow-sm border p-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
@@ -447,7 +693,6 @@ const AdminClasses: React.FC = () => {
           </div>
         </div>
 
-        {/* Classes Table */}
         {loading ? (
           <div className="flex justify-center py-20 bg-white rounded-xl">
             <Loader2 size={48} className="animate-spin text-blue-500" />
@@ -487,7 +732,6 @@ const AdminClasses: React.FC = () => {
               </div>
             </div>
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex justify-center items-center gap-2">
                 <button
@@ -525,7 +769,6 @@ const AdminClasses: React.FC = () => {
         )}
       </div>
 
-      {/* Modals */}
       {showCreateModal && (
         <CreateClassModal 
           isOpen={showCreateModal} 
@@ -535,6 +778,7 @@ const AdminClasses: React.FC = () => {
       )}
       {showDetailsModal && <ClassDetailsModal />}
       {showEditModal && <EditClassModal />}
+      {showSubjectsModal && <AssignSubjectsModal />}
     </div>
   );
 };

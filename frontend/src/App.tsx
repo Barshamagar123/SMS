@@ -16,6 +16,7 @@ import AdminClasses from './pages/admin/Classes';  // ← ADD THIS IMPORT
 import TeacherDashboard from './pages/teacher/Dashboard';
 import StudentDashboard from './pages/student/Dashboard';
 import ParentDashboard from './pages/parent/Dashboard';
+import AdminSubjects from './pages/admin/Subjects';
 
 const RoleBasedDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -137,6 +138,14 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+  path="/admin/subjects"
+  element={
+    <ProtectedRoute>
+      <AdminSubjects />
+    </ProtectedRoute>
+  }
+/>
         
         {/* ← ADD THIS ROUTE FOR ADMIN CLASSES */}
         <Route

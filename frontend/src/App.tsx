@@ -11,6 +11,8 @@ import Students from './pages/superadmin/Students';
 import Teachers from './pages/superadmin/Teachers';
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminStudents from './pages/admin/Students';
+import AdminTeachers from './pages/admin/Teachers';
+import AdminClasses from './pages/admin/Classes';  // ← ADD THIS IMPORT
 import TeacherDashboard from './pages/teacher/Dashboard';
 import StudentDashboard from './pages/student/Dashboard';
 import ParentDashboard from './pages/parent/Dashboard';
@@ -123,6 +125,25 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute>
               <AdminStudents />
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/admin/teachers"
+          element={
+            <ProtectedRoute>
+              <AdminTeachers />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* ← ADD THIS ROUTE FOR ADMIN CLASSES */}
+        <Route
+          path="/admin/classes"
+          element={
+            <ProtectedRoute>
+              <AdminClasses />
             </ProtectedRoute>
           }
         />

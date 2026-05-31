@@ -39,10 +39,10 @@ router.post(
   authController.publicRegister
 );
 
-// FORGOT PASSWORD
+// FORGOT PASSWORD (User self reset - sends email token)
 router.post('/forgot-password', authController.forgotPassword);
 
-// RESET PASSWORD
+// RESET PASSWORD (User self reset with token)
 router.post('/reset-password', authController.resetPassword);
 
 // REFRESH TOKEN
@@ -66,6 +66,14 @@ router.get(
   authenticate,
   requireSuperAdmin,
   authController.getAllAdmins
+);
+
+// RESET ADMIN PASSWORD (SuperAdmin only)
+router.post(
+  '/admins/:id/reset-password',
+  authenticate,
+  requireSuperAdmin,
+  authController.resetAdminPassword
 );
 
 // ========================= TEACHER SELF ROUTES (SPECIFIC - MUST COME FIRST) =========================
@@ -212,6 +220,14 @@ router.put(
 
 // DELETE USER
 router.delete('/users/:id', authenticate, requireAdmin, authController.deleteUser);
+
+// RESET ANY USER PASSWORD (SuperAdmin only)
+router.post(
+  '/users/:id/reset-password',
+  authenticate,
+  requireSuperAdmin,
+  authController.resetAnyUserPassword
+);
 
 // ========================= STUDENT SELF ROUTES =========================
 

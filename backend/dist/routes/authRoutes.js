@@ -11,9 +11,9 @@ const router = Router();
 router.post('/login', loginLimiter, validateLogin, handleValidationErrors, authController.login);
 // PUBLIC REGISTER (Only PARENT allowed)
 router.post('/register/public', validateRegisterPublic, handleValidationErrors, authController.publicRegister);
-// FORGOT PASSWORD
+// FORGOT PASSWORD (User self reset - sends email token)
 router.post('/forgot-password', authController.forgotPassword);
-// RESET PASSWORD
+// RESET PASSWORD (User self reset with token)
 router.post('/reset-password', authController.resetPassword);
 // REFRESH TOKEN
 router.post('/refresh', authController.refresh);
@@ -22,6 +22,8 @@ router.post('/refresh', authController.refresh);
 router.post('/admin/create', authenticate, requireSuperAdmin, validateCreateAdmin, handleValidationErrors, authController.createAdmin);
 // GET ALL ADMINS (SuperAdmin only)
 router.get('/superadmin/admins', authenticate, requireSuperAdmin, authController.getAllAdmins);
+// RESET ADMIN PASSWORD (SuperAdmin only)
+router.post('/admins/:id/reset-password', authenticate, requireSuperAdmin, authController.resetAdminPassword);
 // ========================= TEACHER SELF ROUTES (SPECIFIC - MUST COME FIRST) =========================
 // Get own teacher profile
 router.get('/teachers/me', authenticate, authController.getOwnTeacherProfile);
@@ -61,6 +63,8 @@ router.get('/users', authenticate, requireAdmin, authController.getAllUsers);
 router.put('/users/:id', authenticate, requireAdmin, validateUpdateUser, handleValidationErrors, authController.updateUser);
 // DELETE USER
 router.delete('/users/:id', authenticate, requireAdmin, authController.deleteUser);
+// RESET ANY USER PASSWORD (SuperAdmin only)
+router.post('/users/:id/reset-password', authenticate, requireSuperAdmin, authController.resetAnyUserPassword);
 // ========================= STUDENT SELF ROUTES =========================
 // Get own full profile
 router.get('/me/profile', authenticate, authController.getOwnProfile);

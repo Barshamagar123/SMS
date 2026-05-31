@@ -81,16 +81,13 @@ export default class AuthService {
         if (exists) {
             throw new Error('Email already exists');
         }
-        // Validate required fields
         const requiredFields = ['email', 'name', 'qualification', 'specialization', 'phone', 'address', 'hireDate'];
         const missingFields = requiredFields.filter(field => !data[field]);
         if (missingFields.length > 0) {
             throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
         }
-        // Generate default password
         const defaultPassword = `Teacher@${Math.random().toString(36).slice(-6)}`;
         const hashed = await bcrypt.hash(defaultPassword, 10);
-        // Create User account
         const user = await prisma.user.create({
             data: {
                 email: data.email,
@@ -103,12 +100,10 @@ export default class AuthService {
                 phone: data.phone
             }
         });
-        // Generate Employee ID (TCH20250001 format)
         const year = new Date().getFullYear();
         const teacherCount = await prisma.teacher.count();
         const sequence = String(teacherCount + 1).padStart(4, '0');
         const employeeId = `TCH${year}${sequence}`;
-        // Create Teacher profile
         const teacher = await prisma.teacher.create({
             data: {
                 userId: user.id,
@@ -245,7 +240,6 @@ export default class AuthService {
         if (!teacher) {
             throw new Error('Teacher not found');
         }
-        // Update User
         if (data.name || data.email || data.phone || data.isActive !== undefined) {
             await prisma.user.update({
                 where: { id: teacher.userId },
@@ -257,7 +251,6 @@ export default class AuthService {
                 }
             });
         }
-        // Update Teacher
         const updatedTeacher = await prisma.teacher.update({
             where: { id: teacherId },
             data: {
@@ -290,7 +283,6 @@ export default class AuthService {
         if (!teacher) {
             throw new Error('Teacher not found');
         }
-        // Soft delete - deactivate user
         await prisma.user.update({
             where: { id: teacher.userId },
             data: { isActive: false }
@@ -356,14 +348,12 @@ export default class AuthService {
                 fs.unlinkSync(file.path);
             throw new Error('Teacher profile not found');
         }
-        // Delete old photo if exists
         if (teacher.profilePhoto) {
             const oldPhotoPath = path.join(process.cwd(), teacher.profilePhoto);
             if (fs.existsSync(oldPhotoPath)) {
                 fs.unlinkSync(oldPhotoPath);
             }
         }
-        // Update teacher with new photo URL
         const photoUrl = `/uploads/teachers/${file.filename}`;
         const updatedTeacher = await prisma.teacher.update({
             where: { id: teacher.id },
@@ -396,14 +386,12 @@ export default class AuthService {
         if (!teacher) {
             throw new Error('Teacher profile not found');
         }
-        // Delete physical file
         if (teacher.profilePhoto) {
             const photoPath = path.join(process.cwd(), teacher.profilePhoto);
             if (fs.existsSync(photoPath)) {
                 fs.unlinkSync(photoPath);
             }
         }
-        // Update database
         await prisma.teacher.update({
             where: { id: teacher.id },
             data: { profilePhoto: null }
@@ -426,7 +414,6 @@ export default class AuthService {
             console.log(`❌ No profilePhoto field for teacher ID: ${teacherId}`);
             return null;
         }
-        // Try multiple possible paths
         const possiblePaths = [
             path.join(process.cwd(), teacher.profilePhoto),
             path.join(process.cwd(), 'uploads', 'teachers', path.basename(teacher.profilePhoto)),
@@ -452,10 +439,8 @@ export default class AuthService {
         if (!teacher) {
             throw new Error('Teacher not found');
         }
-        // Generate new random password
         const newPassword = `Teacher@${Math.random().toString(36).slice(-6)}`;
         const hashedPassword = await bcrypt.hash(newPassword, 10);
-        // Update user password
         await prisma.user.update({
             where: { id: teacher.userId },
             data: {
@@ -479,12 +464,10 @@ export default class AuthService {
         if (!teacher) {
             throw new Error('Teacher not found');
         }
-        // Update user active status
         const updatedUser = await prisma.user.update({
             where: { id: teacher.userId },
             data: { isActive: isActive }
         });
-        // Update teacher isActive status if needed
         const updatedTeacher = await prisma.teacher.update({
             where: { id: teacherId },
             data: { isActive: isActive }
@@ -497,7 +480,7 @@ export default class AuthService {
             isActive: updatedUser.isActive
         };
     }
-    // ================= CREATE STUDENT (ADMIN ONLY) =================
+    // ================= CREATE STUDENT (ADMIN ONLY) - PINCODE REMOVED =================
     static async createStudent(data, adminId) {
         const exists = await prisma.user.findUnique({
             where: { email: data.email }
@@ -761,7 +744,7 @@ export default class AuthService {
         });
         return { token };
     }
-    // ================= RESET PASSWORD =================
+    // ================= RESET PASSWORD (STUDENT SELF RESET) =================
     static async resetPassword(token, newPassword) {
         const reset = await prisma.passwordReset.findFirst({
             where: {
@@ -830,6 +813,7 @@ export default class AuthService {
             data: { profilePhoto: photoUrl }
         });
     }
+    // PINCODE REMOVED from updateStudentProfile
     static async updateStudentProfile(userId, data) {
         const student = await prisma.student.findUnique({
             where: { userId }
@@ -1071,6 +1055,7 @@ export default class AuthService {
             isActive: updatedUser.isActive
         };
     }
+    // ================= ADMIN RESET STUDENT PASSWORD (Generates new password) =================
     static async resetStudentPassword(studentId) {
         const student = await prisma.student.findUnique({
             where: { id: studentId },
@@ -1092,6 +1077,56 @@ export default class AuthService {
             studentId: student.id,
             name: student.user.name,
             email: student.user.email,
+            newPassword: newPassword
+        };
+    }
+    // ================= SUPERADMIN RESET ADMIN PASSWORD =================
+    static async resetAdminPassword(adminId) {
+        const admin = await prisma.user.findUnique({
+            where: { id: adminId, role: 'ADMIN' }
+        });
+        if (!admin) {
+            throw new Error('Admin not found');
+        }
+        const newPassword = `Admin@${Math.random().toString(36).slice(-6)}`;
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await prisma.user.update({
+            where: { id: admin.id },
+            data: {
+                password: hashedPassword,
+                isFirstLogin: true
+            }
+        });
+        return {
+            adminId: admin.id,
+            name: admin.name,
+            email: admin.email,
+            newPassword: newPassword
+        };
+    }
+    // ================= SUPERADMIN RESET ANY USER PASSWORD =================
+    static async resetAnyUserPassword(userId) {
+        const user = await prisma.user.findUnique({
+            where: { id: userId }
+        });
+        if (!user) {
+            throw new Error('User not found');
+        }
+        const rolePrefix = user.role === 'ADMIN' ? 'Admin' : user.role === 'TEACHER' ? 'Teacher' : 'User';
+        const newPassword = `${rolePrefix}@${Math.random().toString(36).slice(-6)}`;
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                password: hashedPassword,
+                isFirstLogin: true
+            }
+        });
+        return {
+            userId: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
             newPassword: newPassword
         };
     }

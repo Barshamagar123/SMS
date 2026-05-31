@@ -580,7 +580,6 @@ export default class AuthService {
         address?: string;
         city?: string;
         state?: string;
-        pincode?: string;
     }): Promise<{
         id: number;
         phone: string | null;
@@ -710,6 +709,19 @@ export default class AuthService {
         studentId: number;
         name: string;
         email: string;
+        newPassword: string;
+    }>;
+    static resetAdminPassword(adminId: number): Promise<{
+        adminId: number;
+        name: string;
+        email: string;
+        newPassword: string;
+    }>;
+    static resetAnyUserPassword(userId: number): Promise<{
+        userId: number;
+        name: string;
+        email: string;
+        role: import("@prisma/client").$Enums.RoleEnum;
         newPassword: string;
     }>;
     static getStudentStatistics(): Promise<{

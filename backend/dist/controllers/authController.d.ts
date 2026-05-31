@@ -41,6 +41,8 @@ declare class AuthController {
     getStudentPhotoById: (req: AuthenticatedRequest, res: Response) => Promise<void | Response<any, Record<string, any>>>;
     updateStudentStatus: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
     resetStudentPassword: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+    resetAdminPassword: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+    resetAnyUserPassword: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
     getStudentStatistics: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
     exportStudentsData: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
 }

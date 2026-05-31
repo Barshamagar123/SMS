@@ -520,6 +520,14 @@ class AuthController {
         });
       }
 
+      // Check if user is Admin or SuperAdmin
+      if (req.user?.role !== 'ADMIN' && req.user?.role !== 'SUPERADMIN') {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. Only Admin can reset teacher passwords.'
+        });
+      }
+
       const result = await AuthService.resetTeacherPassword(teacherId);
       
       res.json({
@@ -577,7 +585,7 @@ class AuthController {
   };
 
 
-  // ================= ADMIN → CREATE STUDENT =================
+  // ================= ADMIN → CREATE STUDENT (PINCODE REMOVED) =================
   createStudent = async (
     req: AuthenticatedRequest,
     res: Response
@@ -597,7 +605,6 @@ class AuthController {
         address,
         city,
         state,
-        pincode,
         bloodGroup,
         phone,
         parentEmail,
@@ -620,8 +627,7 @@ class AuthController {
         parentPhone: 'Parent phone is required',
         address: 'Address is required',
         city: 'City is required',
-        state: 'State is required',
-        pincode: 'Pincode is required'
+        state: 'State is required'
       };
 
       const missingFields: string[] = [];
@@ -666,14 +672,6 @@ class AuthController {
         });
       }
 
-      // ========== VALIDATE PINCODE (6 digits) ==========
-      if (pincode && !/^\d{6}$/.test(pincode)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Pincode must be 6 digits'
-        });
-      }
-
       // ========== VALIDATE PARENT PHONE (10 digits) ==========
       const cleanPhone = parentPhone.replace(/[^0-9]/g, '');
       if (cleanPhone && !/^\d{10}$/.test(cleanPhone)) {
@@ -688,8 +686,8 @@ class AuthController {
         const cleanStudentPhone = phone.replace(/[^0-9]/g, '');
         if (!/^\d{10}$/.test(cleanStudentPhone)) {
           return res.status(400).json({
-            success: false,
-            message: 'Student phone must be a valid 10-digit number'
+          success: false,
+          message: 'Student phone must be a valid 10-digit number'
           });
         }
       }
@@ -1163,7 +1161,7 @@ class AuthController {
   };
 
 
-  // ================= RESET PASSWORD =================
+  // ================= RESET PASSWORD (STUDENT SELF RESET) =================
   resetPassword = async (
     req: any,
     res: Response
@@ -1306,7 +1304,7 @@ class AuthController {
   };
 
 
-  // ================= STUDENT: UPDATE OWN PROFILE =================
+  // ================= STUDENT: UPDATE OWN PROFILE (PINCODE REMOVED) =================
   updateOwnProfile = async (req: AuthenticatedRequest, res: Response) => {
     try {
       const user = req.user;
@@ -1318,14 +1316,13 @@ class AuthController {
         });
       }
 
-      const { phone, address, city, state, pincode } = req.body;
+      const { phone, address, city, state } = req.body;
 
       const updatedStudent = await AuthService.updateStudentProfile(user.id, {
         phone,
         address,
         city,
-        state,
-        pincode
+        state
       });
 
       return res.status(200).json({
@@ -1336,7 +1333,6 @@ class AuthController {
           address: updatedStudent.address,
           city: updatedStudent.city,
           state: updatedStudent.state,
-        
         }
       });
 
@@ -1684,7 +1680,7 @@ class AuthController {
     }
   };
 
-  // ================= RESET STUDENT PASSWORD =================
+  // ================= ADMIN RESET STUDENT PASSWORD (Admin generates new password) =================
   resetStudentPassword = async (
     req: AuthenticatedRequest,
     res: Response
@@ -1700,11 +1696,99 @@ class AuthController {
         });
       }
 
+      // Check if user is Admin or SuperAdmin
+      if (req.user?.role !== 'ADMIN' && req.user?.role !== 'SUPERADMIN') {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. Only Admin can reset student passwords.'
+        });
+      }
+
       const result = await AuthService.resetStudentPassword(studentId);
       
       res.json({
         success: true,
         message: 'Password reset successfully',
+        data: result,
+        timestamp: new Date().toISOString()
+      });
+    } catch (err: any) {
+      res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+  };
+
+  // ================= SUPERADMIN RESET ADMIN PASSWORD =================
+  resetAdminPassword = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+    try {
+      const { id } = req.params;
+      const adminId = toInt(id);
+
+      if (isNaN(adminId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid admin ID'
+        });
+      }
+
+      // Only SuperAdmin can reset admin passwords
+      if (req.user?.role !== 'SUPERADMIN') {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. Only SuperAdmin can reset admin passwords.'
+        });
+      }
+
+      const result = await AuthService.resetAdminPassword(adminId);
+      
+      res.json({
+        success: true,
+        message: 'Admin password reset successfully',
+        data: result,
+        timestamp: new Date().toISOString()
+      });
+    } catch (err: any) {
+      res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+  };
+
+  // ================= SUPERADMIN RESET ANY USER PASSWORD =================
+  resetAnyUserPassword = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+    try {
+      const { id } = req.params;
+      const userId = toInt(id);
+
+      if (isNaN(userId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Only SuperAdmin can reset any user password
+      if (req.user?.role !== 'SUPERADMIN') {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. Only SuperAdmin can reset any user password.'
+        });
+      }
+
+      const result = await AuthService.resetAnyUserPassword(userId);
+      
+      res.json({
+        success: true,
+        message: `Password reset successfully for ${result.name}`,
         data: result,
         timestamp: new Date().toISOString()
       });

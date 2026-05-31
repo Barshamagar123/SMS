@@ -8,6 +8,7 @@ import {
   TrendingUp, Award, RefreshCw, Download,
   School, BarChart3, UserPlus
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface Admin {
   id: number;
@@ -28,7 +29,7 @@ const SuperAdminDashboard: React.FC = () => {
     totalStudents: 0,
     totalTeachers: 0,
     totalAdmins: 0,
-    totalClasses: 8,
+    totalClasses: 0,
     todayAttendance: 94.5
   });
 
@@ -39,23 +40,50 @@ const SuperAdminDashboard: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const users = await authApi.getAllUsers();
-      const allUsers = users.data.data;
-      // ✅ Only show ACTIVE admins
+      // Fetch all users for admins and teachers
+      const usersResponse = await authApi.getAllUsers();
+      const allUsers = usersResponse.data.data;
+      
+      // Fetch students with details from the dedicated endpoint
+      const studentsResponse = await authApi.getSuperAdminStudents();
+      const studentsData = studentsResponse.data.data || [];
+      
+      // Get unique classes from students
+      const uniqueClasses = new Set();
+      studentsData.forEach((student: any) => {
+        if (student.student?.classId) {
+          uniqueClasses.add(student.student.classId);
+        }
+      });
+      
+      // Filter admins (from users table)
       const adminUsers = allUsers.filter((u: any) => u.role === 'ADMIN' && u.isActive === true);
-      const studentUsers = allUsers.filter((u: any) => u.role === 'STUDENT' && u.isActive === true);
+      
+      // Filter teachers (from users table)
       const teacherUsers = allUsers.filter((u: any) => u.role === 'TEACHER' && u.isActive === true);
+      
+      // Total students from the Student table (via API)
+      const totalStudents = studentsData.length;
       
       setAdmins(adminUsers);
       setStats({
-        totalStudents: studentUsers.length,
+        totalStudents: totalStudents,
         totalTeachers: teacherUsers.length,
         totalAdmins: adminUsers.length,
-        totalClasses: 8,
+        totalClasses: uniqueClasses.size,
         todayAttendance: 94.5
       });
+      
+      console.log('Dashboard Stats:', {
+        totalStudents: totalStudents,
+        totalTeachers: teacherUsers.length,
+        totalAdmins: adminUsers.length,
+        totalClasses: uniqueClasses.size
+      });
+      
     } catch (error) {
       console.error('Failed to fetch data:', error);
+      toast.error('Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
@@ -67,9 +95,9 @@ const SuperAdminDashboard: React.FC = () => {
       try {
         await authApi.deleteUser(id);
         await fetchData();
-        alert('Admin deactivated successfully');
+        toast.success('Admin deactivated successfully');
       } catch (error: any) {
-        alert(error.response?.data?.message || 'Failed to deactivate admin');
+        toast.error(error.response?.data?.message || 'Failed to deactivate admin');
       } finally {
         setDeletingId(null);
       }
@@ -194,10 +222,10 @@ const SuperAdminDashboard: React.FC = () => {
                             </div>
                           )}
                         </div>
-                      </td>
+                       </td>
                       <td className="px-4 py-3">
                         <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Active</span>
-                      </td>
+                       </td>
                       <td className="px-4 py-3">
                         <button
                           onClick={() => handleDeleteAdmin(admin.id, admin.name)}
@@ -211,7 +239,7 @@ const SuperAdminDashboard: React.FC = () => {
                             <Trash2 size={16} />
                           )}
                         </button>
-                      </td>
+                       </td>
                     </tr>
                   ))}
                 </tbody>

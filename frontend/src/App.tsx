@@ -7,8 +7,10 @@ import Login from './pages/auth/Login';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import SuperAdminDashboard from './pages/superadmin/Dashboard';
 import Admins from './pages/superadmin/Admins';
-import Students from './pages/superadmin/Students';  // ← ADD THIS IMPORT
+import Students from './pages/superadmin/Students';
+import Teachers from './pages/superadmin/Teachers';
 import AdminDashboard from './pages/admin/Dashboard';
+import AdminStudents from './pages/admin/Students';
 import TeacherDashboard from './pages/teacher/Dashboard';
 import StudentDashboard from './pages/student/Dashboard';
 import ParentDashboard from './pages/parent/Dashboard';
@@ -19,12 +21,18 @@ const RoleBasedDashboard: React.FC = () => {
   if (!user) return <Navigate to="/login" replace />;
   
   switch (user.role) {
-    case 'SUPERADMIN': return <SuperAdminDashboard />;
-    case 'ADMIN': return <AdminDashboard />;
-    case 'TEACHER': return <TeacherDashboard />;
-    case 'STUDENT': return <StudentDashboard />;
-    case 'PARENT': return <ParentDashboard />;
-    default: return <AdminDashboard />;
+    case 'SUPERADMIN': 
+      return <Navigate to="/superadmin/dashboard" replace />;
+    case 'ADMIN': 
+      return <Navigate to="/admin/dashboard" replace />;
+    case 'TEACHER': 
+      return <TeacherDashboard />;
+    case 'STUDENT': 
+      return <StudentDashboard />;
+    case 'PARENT': 
+      return <ParentDashboard />;
+    default: 
+      return <AdminDashboard />;
   }
 };
 
@@ -53,7 +61,27 @@ const AppRoutes: React.FC = () => {
       
       {/* Protected Routes with Layout */}
       <Route element={<Layout />}>
-        {/* Dashboard */}
+        {/* SuperAdmin Dashboard */}
+        <Route
+          path="/superadmin/dashboard"
+          element={
+            <ProtectedRoute>
+              <SuperAdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Admin Dashboard */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Dashboard Redirect */}
         <Route
           path="/dashboard"
           element={
@@ -63,7 +91,7 @@ const AppRoutes: React.FC = () => {
           }
         />
         
-        {/* Admins Page */}
+        {/* SuperAdmin Routes */}
         <Route
           path="/admins"
           element={
@@ -72,13 +100,29 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
-        
-        {/* ← ADD THIS ROUTE FOR STUDENTS PAGE */}
         <Route
           path="/students"
           element={
             <ProtectedRoute>
               <Students />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teachers"
+          element={
+            <ProtectedRoute>
+              <Teachers />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Admin Routes */}
+        <Route
+          path="/admin/students"
+          element={
+            <ProtectedRoute>
+              <AdminStudents />
             </ProtectedRoute>
           }
         />

@@ -455,6 +455,127 @@ class AuthController {
 
   };
 
+  // ================= ADMIN: GET TEACHER PHOTO BY ID (For SuperAdmin/Admin) =================
+  getTeacherPhotoById = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+    try {
+      const { id } = req.params;
+      const teacherId = toInt(id);
+
+      if (isNaN(teacherId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid teacher ID'
+        });
+      }
+
+      console.log(`📸 Fetching photo for teacher ID: ${teacherId}`);
+      
+      const photoPath = await AuthService.getTeacherPhotoById(teacherId);
+
+      if (!photoPath) {
+        console.log(`❌ No photo found for teacher ID: ${teacherId}`);
+        return res.status(404).json({
+          success: false,
+          message: 'Profile photo not found'
+        });
+      }
+
+      console.log(`✅ Photo found at: ${photoPath}`);
+      
+      // Check if file exists
+      if (!fs.existsSync(photoPath)) {
+        console.log(`❌ File does not exist at: ${photoPath}`);
+        return res.status(404).json({
+          success: false,
+          message: 'Photo file not found on server'
+        });
+      }
+
+      return res.sendFile(photoPath);
+    } catch (err: any) {
+      console.error('Error in getTeacherPhotoById:', err);
+      res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+  };
+
+  // ================= ADMIN: RESET TEACHER PASSWORD =================
+  resetTeacherPassword = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+    try {
+      const { id } = req.params;
+      const teacherId = toInt(id);
+
+      if (isNaN(teacherId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid teacher ID'
+        });
+      }
+
+      const result = await AuthService.resetTeacherPassword(teacherId);
+      
+      res.json({
+        success: true,
+        message: 'Password reset successfully',
+        data: result,
+        timestamp: new Date().toISOString()
+      });
+    } catch (err: any) {
+      res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+  };
+
+  // ================= ADMIN: UPDATE TEACHER STATUS =================
+  updateTeacherStatus = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+    try {
+      const { id } = req.params;
+      const { isActive } = req.body;
+      const teacherId = toInt(id);
+
+      if (isNaN(teacherId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid teacher ID'
+        });
+      }
+
+      if (typeof isActive !== 'boolean') {
+        return res.status(400).json({
+          success: false,
+          message: 'isActive must be a boolean'
+        });
+      }
+
+      const teacher = await AuthService.updateTeacherStatus(teacherId, isActive);
+      
+      res.json({
+        success: true,
+        message: `Teacher ${isActive ? 'activated' : 'deactivated'} successfully`,
+        data: teacher,
+        timestamp: new Date().toISOString()
+      });
+    } catch (err: any) {
+      res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+  };
+
 
   // ================= ADMIN → CREATE STUDENT =================
   createStudent = async (
@@ -1474,7 +1595,7 @@ class AuthController {
     }
   };
 
-  // ================= GET STUDENT PHOTO BY ID (For Admin/Superadmin) =================
+  // ================= GET STUDENT PHOTO BY ID (For Admin/Superadmin) - IMPROVED VERSION =================
   getStudentPhotoById = async (
     req: AuthenticatedRequest,
     res: Response
@@ -1490,17 +1611,32 @@ class AuthController {
         });
       }
 
+      console.log(`📸 Fetching photo for student ID: ${studentId}`);
+      
       const photoPath = await AuthService.getStudentPhotoById(studentId);
 
       if (!photoPath) {
+        console.log(`❌ No photo found for student ID: ${studentId}`);
         return res.status(404).json({
           success: false,
           message: 'Profile photo not found'
         });
       }
 
+      console.log(`✅ Photo found at: ${photoPath}`);
+      
+      // Check if file exists
+      if (!fs.existsSync(photoPath)) {
+        console.log(`❌ File does not exist at: ${photoPath}`);
+        return res.status(404).json({
+          success: false,
+          message: 'Photo file not found on server'
+        });
+      }
+
       return res.sendFile(photoPath);
     } catch (err: any) {
+      console.error('Error in getStudentPhotoById:', err);
       res.status(400).json({
         success: false,
         message: err.message

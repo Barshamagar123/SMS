@@ -61,6 +61,12 @@ export const authApi = {
       headers: { 'Content-Type': 'multipart/form-data' } 
     });
   },
+  resetTeacherPassword: (teacherId: number) => 
+    api.post(`/auth/teachers/${teacherId}/reset-password`),
+  updateTeacherStatus: (teacherId: number, isActive: boolean) => 
+    api.patch(`/auth/teachers/${teacherId}/status`, { isActive }),
+  getTeacherPhotoById: (teacherId: number) => 
+    api.get(`/auth/teachers/${teacherId}/photo`, { responseType: 'blob' }),
   
   // Student Management (Admin only)
   createStudent: (data: any) => api.post('/auth/student/create', data),
@@ -90,10 +96,8 @@ export const authApi = {
   getStudentDetails: (studentId: number) => api.get(`/auth/students/${studentId}/details`),
   
   // Get student photo by ID (for admin/superadmin viewing)
-  getStudentPhotoById: (studentId: number) => api.get(`/auth/students/${studentId}/photo`, { responseType: 'blob' }),
-  
-  // Get teacher photo by ID
-  getTeacherPhotoById: (teacherId: number) => api.get(`/auth/teachers/${teacherId}/photo`, { responseType: 'blob' }),
+  getStudentPhotoById: (studentId: number) => 
+    api.get(`/auth/students/${studentId}/photo`, { responseType: 'blob' }),
   
   // Bulk operations
   bulkCreateStudents: (studentsData: any[]) => api.post('/auth/students/bulk', { students: studentsData }),

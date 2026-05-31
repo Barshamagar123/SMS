@@ -127,6 +127,20 @@ export default class AuthService {
     static deleteTeacherProfilePhoto(userId: number): Promise<{
         success: boolean;
     }>;
+    static getTeacherPhotoById(teacherId: number): Promise<string | null>;
+    static resetTeacherPassword(teacherId: number): Promise<{
+        teacherId: number;
+        name: string;
+        email: string;
+        newPassword: string;
+    }>;
+    static updateTeacherStatus(teacherId: number, isActive: boolean): Promise<{
+        userId: number;
+        teacherId: number;
+        name: string;
+        email: string;
+        isActive: boolean;
+    }>;
     static createStudent(data: any, adminId: number): Promise<{
         id: number;
         rollNumber: string;
@@ -708,8 +722,6 @@ export default class AuthService {
             other: number;
         };
         newThisMonth: number;
-        byClass: unknown;
-        byBloodGroup: unknown;
     }>;
     static exportStudentsData(format: string): Promise<string>;
 }

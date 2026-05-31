@@ -31,17 +31,24 @@ router.post('/teachers/me/photo', authenticate, uploadTeacherPhotoMiddleware, au
 router.get('/teachers/me/photo', authenticate, authController.getTeacherProfilePhoto);
 // Delete teacher profile photo
 router.delete('/teachers/me/photo', authenticate, authController.deleteTeacherProfilePhoto);
-// ========================= ADMIN ONLY (PARAMETER ROUTES - MUST COME AFTER SPECIFIC) =========================
+// ========================= ADMIN ONLY TEACHER MANAGEMENT ROUTES =========================
 // CREATE TEACHER
 router.post('/teacher/create', authenticate, requireAdmin, validateCreateTeacher, handleValidationErrors, authController.createTeacher);
 // GET ALL TEACHERS
 router.get('/teachers', authenticate, requireAdmin, authController.getAllTeachers);
-// GET TEACHER BY ID (This will NOT catch /teachers/me because it comes after)
+// GET TEACHER BY ID
 router.get('/teachers/:id', authenticate, requireAdmin, authController.getTeacherById);
 // UPDATE TEACHER
 router.put('/teachers/:id', authenticate, requireAdmin, authController.updateTeacher);
 // DELETE TEACHER
 router.delete('/teachers/:id', authenticate, requireAdmin, authController.deleteTeacher);
+// GET TEACHER PHOTO BY ID (For Admin/SuperAdmin)
+router.get('/teachers/:id/photo', authenticate, requireAdmin, authController.getTeacherPhotoById);
+// RESET TEACHER PASSWORD (Admin & SuperAdmin)
+router.post('/teachers/:id/reset-password', authenticate, requireAdmin, authController.resetTeacherPassword);
+// UPDATE TEACHER STATUS (Activate/Deactivate)
+router.patch('/teachers/:id/status', authenticate, requireAdmin, authController.updateTeacherStatus);
+// ========================= STUDENT MANAGEMENT ROUTES (Admin Only) =========================
 // CREATE STUDENT
 router.post('/student/create', authenticate, requireAdmin, validateCreateStudent, handleValidationErrors, authController.createStudent);
 // TRANSFER STUDENT (Admin only)
@@ -72,7 +79,7 @@ router.get('/me', authenticate, authController.getMe);
 router.post('/logout', authenticate, authController.logout);
 // CHANGE PASSWORD
 router.post('/change-password', authenticate, authController.changePassword);
-// ========================= NEW: SUPERADMIN/ADMIN STUDENT MANAGEMENT ROUTES =========================
+// ========================= SUPERADMIN/ADMIN STUDENT MANAGEMENT ROUTES =========================
 // GET ALL STUDENTS WITH FULL DETAILS (Admin & SuperAdmin)
 router.get('/superadmin/students', authenticate, requireAdmin, authController.getAllStudentsWithDetails);
 // GET STUDENT STATISTICS (Admin & SuperAdmin)

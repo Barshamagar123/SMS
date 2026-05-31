@@ -14,7 +14,14 @@ import {
   Shield,
   Database,
   BarChart3,
-  Bell
+  Bell,
+  BookMarked,
+  UserPlus,
+  Award,
+  CreditCard,
+  Download,
+  GraduationCap,
+  Gift,
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
@@ -34,15 +41,23 @@ const Sidebar: React.FC = () => {
     { path: '/settings', label: 'Settings', icon: Settings },
   ];
 
-  // Admin Menu
+  // Admin Menu - All links point to admin routes
   const adminMenu = [
-    { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/students', label: 'Students', icon: Users },
-    { path: '/teachers', label: 'Teachers', icon: UserCircle },
-    { path: '/classes', label: 'Classes', icon: BookOpen },
-    { path: '/attendance', label: 'Attendance', icon: Calendar },
-    { path: '/exams', label: 'Exams', icon: FileText },
-    { path: '/settings', label: 'Settings', icon: Settings },
+    { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/admin/students', label: 'Students', icon: Users },
+    { path: '/admin/teachers', label: 'Teachers', icon: UserCircle },
+    { path: '/admin/classes', label: 'Classes', icon: BookOpen },
+    { path: '/admin/subjects', label: 'Subjects', icon: BookMarked },
+    { path: '/admin/teacher-assignments', label: 'Teacher Assignments', icon: UserPlus },
+    { path: '/admin/attendance', label: 'Attendance Reports', icon: Calendar },
+    { path: '/admin/exams', label: 'Exams', icon: FileText },
+    { path: '/admin/results', label: 'Results', icon: Award },
+    { path: '/admin/report-cards', label: 'Report Cards', icon: Download },
+    { path: '/admin/fees', label: 'Fees', icon: CreditCard },
+    { path: '/admin/holidays', label: 'Holidays', icon: Gift },
+    { path: '/admin/academic-years', label: 'Academic Years', icon: GraduationCap },
+    { path: '/admin/reports', label: 'Reports', icon: BarChart3 },
+    { path: '/admin/settings', label: 'Settings', icon: Settings },
   ];
 
   // Teacher Menu
@@ -84,7 +99,8 @@ const Sidebar: React.FC = () => {
   }
 
   return (
-    <aside className="w-64 bg-gray-900 text-white flex flex-col">
+    // REMOVED "fixed left-0 top-0" - now it works with Layout
+    <aside className="w-64 bg-gray-900 text-white flex flex-col h-full">
       {/* Logo */}
       <div className="p-6 border-b border-gray-800">
         <div className="flex items-center gap-2">

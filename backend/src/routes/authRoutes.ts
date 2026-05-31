@@ -99,7 +99,7 @@ router.delete(
   authController.deleteTeacherProfilePhoto
 );
 
-// ========================= ADMIN ONLY (PARAMETER ROUTES - MUST COME AFTER SPECIFIC) =========================
+// ========================= ADMIN ONLY TEACHER MANAGEMENT ROUTES =========================
 
 // CREATE TEACHER
 router.post(
@@ -119,7 +119,7 @@ router.get(
   authController.getAllTeachers
 );
 
-// GET TEACHER BY ID (This will NOT catch /teachers/me because it comes after)
+// GET TEACHER BY ID
 router.get(
   '/teachers/:id',
   authenticate,
@@ -142,6 +142,32 @@ router.delete(
   requireAdmin,
   authController.deleteTeacher
 );
+
+// GET TEACHER PHOTO BY ID (For Admin/SuperAdmin)
+router.get(
+  '/teachers/:id/photo',
+  authenticate,
+  requireAdmin,
+  authController.getTeacherPhotoById
+);
+
+// RESET TEACHER PASSWORD (Admin & SuperAdmin)
+router.post(
+  '/teachers/:id/reset-password',
+  authenticate,
+  requireAdmin,
+  authController.resetTeacherPassword
+);
+
+// UPDATE TEACHER STATUS (Activate/Deactivate)
+router.patch(
+  '/teachers/:id/status',
+  authenticate,
+  requireAdmin,
+  authController.updateTeacherStatus
+);
+
+// ========================= STUDENT MANAGEMENT ROUTES (Admin Only) =========================
 
 // CREATE STUDENT
 router.post(
@@ -215,7 +241,7 @@ router.post('/logout', authenticate, authController.logout);
 // CHANGE PASSWORD
 router.post('/change-password', authenticate, authController.changePassword);
 
-// ========================= NEW: SUPERADMIN/ADMIN STUDENT MANAGEMENT ROUTES =========================
+// ========================= SUPERADMIN/ADMIN STUDENT MANAGEMENT ROUTES =========================
 
 // GET ALL STUDENTS WITH FULL DETAILS (Admin & SuperAdmin)
 router.get(

@@ -72,9 +72,11 @@ const Students: React.FC = () => {
   const [resettingPassword, setResettingPassword] = useState<number | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
   const [photoUrls, setPhotoUrls] = useState<Record<number, string>>({});
+  const [loadingPhotos, setLoadingPhotos] = useState<Record<number, boolean>>({});
   const itemsPerPage = 9;
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  // Use base URL without /api for static files
+  const BASE_URL = 'http://localhost:3000';
 
   useEffect(() => {
     fetchStudents();
@@ -86,10 +88,14 @@ const Students: React.FC = () => {
       const response = await authApi.getSuperAdminStudents();
       if (response.data.success) {
         const studentsData = response.data.data;
+        console.log('📊 Students data:', studentsData.map(s => ({
+          name: s.name,
+          profilePhoto: s.student?.profilePhoto
+        })));
         setStudents(studentsData);
         
         // Load photos for all students
-        await loadStudentPhotos(studentsData);
+        await loadAllStudentPhotos(studentsData);
       }
     } catch (error) {
       console.error('Failed to fetch students:', error);
@@ -99,92 +105,51 @@ const Students: React.FC = () => {
     }
   };
 
-  const loadStudentPhotos = async (studentsData: Student[]) => {
-    const urls: Record<number, string> = {};
-    
+  // FIXED: Load photos using static file URLs directly
+  const loadAllStudentPhotos = async (studentsData: Student[]) => {
     for (const student of studentsData) {
-      const studentId = student.student?.id;
-      const photoPath = student.student?.profilePhoto;
+      const profilePhoto = student.student?.profilePhoto;
       
-      if (studentId) {
-        // Try multiple methods to get photo
+      if (profilePhoto) {
+        setLoadingPhotos(prev => ({ ...prev, [student.id]: true }));
         
-        // Method 1: Direct static file URL if path exists
-        if (photoPath) {
-          let cleanPath = photoPath;
-          if (!cleanPath.startsWith('/')) {
-            cleanPath = '/' + cleanPath;
-          }
-          // Remove any double slashes
-          cleanPath = cleanPath.replace(/\/+/g, '/');
-          const staticUrl = `${API_URL}${cleanPath}`;
-          urls[student.id] = staticUrl;
-          console.log(`📸 ${student.name}: Trying static URL:`, staticUrl);
-          
-          // Test if image exists
-          try {
-            const testResponse = await fetch(staticUrl, { method: 'HEAD' });
-            if (testResponse.ok) {
-              console.log(`✅ ${student.name}: Photo found at static path`);
-              continue;
-            } else {
-              console.log(`❌ ${student.name}: Static path failed, trying API`);
-            }
-          } catch {
-            console.log(`❌ ${student.name}: Static path error, trying API`);
-          }
+        // Construct the full URL
+        let staticUrl = profilePhoto;
+        if (!staticUrl.startsWith('http')) {
+          staticUrl = `${BASE_URL}${staticUrl}`;
         }
         
-        // Method 2: Use API endpoint
-        try {
-          const apiUrl = `${API_URL}/api/auth/students/${studentId}/photo`;
-          console.log(`📸 ${student.name}: Trying API URL:`, apiUrl);
-          
-          // For API endpoint, we need to fetch as blob and create object URL
-          const response = await fetch(apiUrl, {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-            }
-          });
-          
-          if (response.ok) {
-            const blob = await response.blob();
-            if (blob.size > 0) {
-              const objectUrl = URL.createObjectURL(blob);
-              urls[student.id] = objectUrl;
-              console.log(`✅ ${student.name}: Photo loaded from API`);
-            } else {
-              console.log(`❌ ${student.name}: Empty blob from API`);
-              delete urls[student.id];
-            }
-          } else {
-            console.log(`❌ ${student.name}: API returned ${response.status}`);
-            delete urls[student.id];
-          }
-        } catch (error) {
-          console.log(`❌ ${student.name}: API error:`, error);
-          delete urls[student.id];
-        }
+        console.log(`📸 Loading photo for ${student.name}: ${staticUrl}`);
+        
+        // Test if image loads
+        const img = new Image();
+        img.onload = () => {
+          setPhotoUrls(prev => ({ ...prev, [student.id]: staticUrl }));
+          console.log(`✅ Photo loaded for: ${student.name}`);
+          setLoadingPhotos(prev => ({ ...prev, [student.id]: false }));
+        };
+        img.onerror = (err) => {
+          console.log(`❌ Image not found for: ${student.name} at ${staticUrl}`, err);
+          setLoadingPhotos(prev => ({ ...prev, [student.id]: false }));
+        };
+        img.src = staticUrl;
+      } else {
+        console.log(`📷 No photo in database for: ${student.name}`);
+        setLoadingPhotos(prev => ({ ...prev, [student.id]: false }));
       }
     }
-    
-    setPhotoUrls(urls);
   };
 
-  // Cleanup blob URLs when component unmounts or when photoUrls change
+  // Cleanup
   useEffect(() => {
     return () => {
       Object.values(photoUrls).forEach(url => {
-        if (url.startsWith('blob:')) {
+        if (url && url.startsWith('blob:')) {
           URL.revokeObjectURL(url);
         }
       });
     };
   }, [photoUrls]);
-
-  const getProfilePhotoUrl = (student: Student): string | null => {
-    return photoUrls[student.id] || null;
-  };
 
   const handleResetPassword = async (student: Student) => {
     if (!confirm(`Reset password for ${student.name}? They will need to use the new temporary password.`)) {
@@ -351,7 +316,7 @@ const Students: React.FC = () => {
     if (!selectedStudent) return null;
     const s = selectedStudent;
     const details = s.student;
-    const photoUrl = getProfilePhotoUrl(s);
+    const photoUrl = photoUrls[s.id];
 
     return (
       <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowDetailsModal(false)}>
@@ -365,12 +330,20 @@ const Students: React.FC = () => {
                     src={photoUrl}
                     alt={s.name}
                     className="w-24 h-24 rounded-full object-cover border-4 border-white/30 shadow-lg"
+                    onError={(e) => {
+                      console.error(`Failed to load photo for ${s.name}`);
+                      e.currentTarget.style.display = 'none';
+                      // Show fallback
+                      const fallback = e.currentTarget.nextElementSibling;
+                      if (fallback) {
+                        fallback.classList.remove('hidden');
+                      }
+                    }}
                   />
-                ) : (
-                  <div className="w-24 h-24 rounded-full bg-white/20 flex items-center justify-center text-white text-3xl font-bold backdrop-blur-sm">
-                    {getInitials(s.name)}
-                  </div>
-                )}
+                ) : null}
+                <div className={`w-24 h-24 rounded-full bg-white/20 flex items-center justify-center text-white text-3xl font-bold backdrop-blur-sm ${photoUrl ? '' : ''}`}>
+                  {getInitials(s.name)}
+                </div>
                 <div>
                   <h2 className="text-2xl font-bold">{s.name}</h2>
                   <p className="text-blue-100 mt-1">Roll No: {details?.rollNumber || 'N/A'}</p>
@@ -400,7 +373,7 @@ const Students: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Actions Bar */}
+          {/* Rest of the modal content remains the same */}
           <div className="bg-gray-50 border-b border-gray-200 p-4 flex flex-wrap gap-3">
             <button
               onClick={() => handleToggleStatus(s)}
@@ -445,7 +418,6 @@ const Students: React.FC = () => {
             </button>
           </div>
 
-          {/* Content Sections */}
           <div className="p-6 space-y-6">
             {/* Personal Information */}
             <div className="border-b border-gray-200 pb-4">
@@ -582,11 +554,11 @@ const Students: React.FC = () => {
   };
 
   const StudentCard = ({ student }: { student: Student }) => {
-    const photoUrl = getProfilePhotoUrl(student);
+    const photoUrl = photoUrls[student.id];
+    const isLoadingPhoto = loadingPhotos[student.id];
 
     return (
       <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
-        {/* Status Badge */}
         <div className="relative">
           <div className={`absolute top-3 right-3 z-10 px-2 py-0.5 rounded-full text-xs flex items-center gap-1 ${
             student.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
@@ -595,14 +567,21 @@ const Students: React.FC = () => {
             {student.isActive ? 'Active' : 'Inactive'}
           </div>
           
-          {/* Profile Image */}
           <div className="relative pt-6 pb-2 flex justify-center">
             <div className="relative">
-              {photoUrl ? (
+              {isLoadingPhoto ? (
+                <div className="w-28 h-28 rounded-full bg-gray-200 flex items-center justify-center">
+                  <Loader2 size={24} className="animate-spin text-gray-400" />
+                </div>
+              ) : photoUrl ? (
                 <img
                   src={photoUrl}
                   alt={student.name}
                   className="w-28 h-28 rounded-full object-cover border-4 border-blue-100 group-hover:border-blue-300 transition-all duration-300"
+                  onError={(e) => {
+                    console.error(`Failed to load photo for ${student.name}`);
+                    e.currentTarget.style.display = 'none';
+                  }}
                 />
               ) : (
                 <div className="w-28 h-28 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-bold">
@@ -619,13 +598,11 @@ const Students: React.FC = () => {
         </div>
 
         <div className="p-5">
-          {/* Student Name & Roll Number */}
           <h3 className="text-lg font-bold text-gray-800 text-center mb-1">{student.name}</h3>
           <p className="text-sm text-gray-500 text-center mb-3">
             Roll: {student.student?.rollNumber || 'N/A'}
           </p>
 
-          {/* Class & Gender Badges */}
           <div className="flex justify-center gap-2 mb-3">
             <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full font-medium">
               {student.student?.class ? `${student.student.class.name} ${student.student.class.section}` : 'No Class'}
@@ -637,7 +614,6 @@ const Students: React.FC = () => {
             )}
           </div>
 
-          {/* Blood Group */}
           {student.student?.bloodGroup && (
             <div className="flex justify-center mb-3">
               <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${getBloodGroupColor(student.student.bloodGroup)}`}>
@@ -647,7 +623,6 @@ const Students: React.FC = () => {
             </div>
           )}
 
-          {/* Contact Info */}
           <div className="space-y-2 text-sm border-t border-gray-100 pt-3 mt-2">
             <div className="flex items-center gap-2 text-gray-600">
               <Mail size={14} className="text-gray-400 flex-shrink-0" />
@@ -667,7 +642,6 @@ const Students: React.FC = () => {
             )}
           </div>
 
-          {/* Action Buttons */}
           <div className="grid grid-cols-2 gap-2 mt-4">
             <button
               onClick={() => {

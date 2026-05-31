@@ -5,6 +5,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 import authRoutes from './routes/authRoutes.js';
 import classRoutes from './routes/classRoutes.js';
 import subjectRoutes from './routes/subjectRoutes.js';
@@ -24,13 +25,44 @@ const PORT = process.env.PORT || 3000;
 // ==================== MIDDLEWARE ====================
 app.use(helmet());
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
     credentials: true
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-// Serve static files
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// ==================== STATIC FILE SERVING ====================
+// Use project root for consistent file serving
+const PROJECT_ROOT = process.cwd();
+const uploadsPath = path.join(PROJECT_ROOT, 'uploads');
+// Create upload directories if they don't exist
+if (!fs.existsSync(uploadsPath)) {
+    fs.mkdirSync(uploadsPath, { recursive: true });
+    console.log(`📁 Created uploads directory at: ${uploadsPath}`);
+}
+const studentsUploadsPath = path.join(uploadsPath, 'students');
+const teachersUploadsPath = path.join(uploadsPath, 'teachers');
+const documentsUploadsPath = path.join(uploadsPath, 'documents');
+if (!fs.existsSync(studentsUploadsPath)) {
+    fs.mkdirSync(studentsUploadsPath, { recursive: true });
+    console.log(`📁 Created students uploads directory`);
+}
+if (!fs.existsSync(teachersUploadsPath)) {
+    fs.mkdirSync(teachersUploadsPath, { recursive: true });
+    console.log(`📁 Created teachers uploads directory`);
+}
+if (!fs.existsSync(documentsUploadsPath)) {
+    fs.mkdirSync(documentsUploadsPath, { recursive: true });
+    console.log(`📁 Created documents uploads directory`);
+}
+// Serve static files from the uploads directory
+// Replace it with:
+app.use('/uploads', (req, res, next) => {
+    res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.header('Cross-Origin-Embedder-Policy', 'credentialless');
+    next();
+}, express.static(uploadsPath));
+console.log(`📁 Serving static files from: ${uploadsPath}`);
+console.log(`📁 Students photos URL: http://localhost:${PORT}/uploads/students/`);
 // Global rate limiting
 app.use('/api', globalLimiter);
 // ==================== ROUTES ====================
@@ -42,6 +74,22 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/holidays', holidayRoutes);
 app.use('/api/exams', examRoutes);
 app.use('/api/report-cards', reportCardRoutes);
+// Debug endpoint to check uploaded files
+app.get('/debug/uploads', (req, res) => {
+    const studentsPath = path.join(uploadsPath, 'students');
+    let files = [];
+    if (fs.existsSync(studentsPath)) {
+        files = fs.readdirSync(studentsPath);
+    }
+    res.json({
+        success: true,
+        uploadsPath: uploadsPath,
+        studentsPath: studentsPath,
+        files: files,
+        fileCount: files.length,
+        staticUrl: `http://localhost:${PORT}/uploads/students/`
+    });
+});
 // Health check
 app.get('/health', (req, res) => {
     res.json({
@@ -50,7 +98,7 @@ app.get('/health', (req, res) => {
         uptime: process.uptime()
     });
 });
-// 404 handler
+// 404 handler - Make sure this is AFTER all routes
 app.use(notFoundHandler);
 // Global error handler
 app.use(errorHandler);
@@ -62,6 +110,8 @@ async function startServer() {
             console.log(`🚀 Server running on port ${PORT}`);
             console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
             console.log(`🔗 API URL: http://localhost:${PORT}/api`);
+            console.log(`📁 Uploads URL: http://localhost:${PORT}/uploads`);
+            console.log(`🐛 Debug URL: http://localhost:${PORT}/debug/uploads`);
         });
     }
     catch (error) {

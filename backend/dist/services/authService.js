@@ -410,6 +410,93 @@ export default class AuthService {
         });
         return { success: true };
     }
+    // ================= ADMIN: GET TEACHER PHOTO BY ID =================
+    static async getTeacherPhotoById(teacherId) {
+        console.log(`🔍 Looking for teacher with ID: ${teacherId}`);
+        const teacher = await prisma.teacher.findUnique({
+            where: { id: teacherId },
+            select: { profilePhoto: true, userId: true, id: true }
+        });
+        if (!teacher) {
+            console.log(`❌ Teacher not found with ID: ${teacherId}`);
+            return null;
+        }
+        console.log(`📸 Teacher found. Profile photo in DB: ${teacher.profilePhoto}`);
+        if (!teacher.profilePhoto) {
+            console.log(`❌ No profilePhoto field for teacher ID: ${teacherId}`);
+            return null;
+        }
+        // Try multiple possible paths
+        const possiblePaths = [
+            path.join(process.cwd(), teacher.profilePhoto),
+            path.join(process.cwd(), 'uploads', 'teachers', path.basename(teacher.profilePhoto)),
+            path.join(__dirname, '../../', teacher.profilePhoto),
+            path.join(process.cwd(), 'src', '..', teacher.profilePhoto),
+        ];
+        for (const photoPath of possiblePaths) {
+            console.log(`🔍 Checking path: ${photoPath}`);
+            if (fs.existsSync(photoPath)) {
+                console.log(`✅ Found photo at: ${photoPath}`);
+                return photoPath;
+            }
+        }
+        console.log(`❌ No photo file found for teacher ID: ${teacherId}`);
+        return null;
+    }
+    // ================= ADMIN: RESET TEACHER PASSWORD =================
+    static async resetTeacherPassword(teacherId) {
+        const teacher = await prisma.teacher.findUnique({
+            where: { id: teacherId },
+            include: { user: true }
+        });
+        if (!teacher) {
+            throw new Error('Teacher not found');
+        }
+        // Generate new random password
+        const newPassword = `Teacher@${Math.random().toString(36).slice(-6)}`;
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        // Update user password
+        await prisma.user.update({
+            where: { id: teacher.userId },
+            data: {
+                password: hashedPassword,
+                isFirstLogin: true
+            }
+        });
+        return {
+            teacherId: teacher.id,
+            name: teacher.user.name,
+            email: teacher.user.email,
+            newPassword: newPassword
+        };
+    }
+    // ================= ADMIN: UPDATE TEACHER STATUS =================
+    static async updateTeacherStatus(teacherId, isActive) {
+        const teacher = await prisma.teacher.findUnique({
+            where: { id: teacherId },
+            include: { user: true }
+        });
+        if (!teacher) {
+            throw new Error('Teacher not found');
+        }
+        // Update user active status
+        const updatedUser = await prisma.user.update({
+            where: { id: teacher.userId },
+            data: { isActive: isActive }
+        });
+        // Update teacher isActive status if needed
+        const updatedTeacher = await prisma.teacher.update({
+            where: { id: teacherId },
+            data: { isActive: isActive }
+        });
+        return {
+            userId: updatedUser.id,
+            teacherId: updatedTeacher.id,
+            name: updatedUser.name,
+            email: updatedUser.email,
+            isActive: updatedUser.isActive
+        };
+    }
     // ================= CREATE STUDENT (ADMIN ONLY) =================
     static async createStudent(data, adminId) {
         const exists = await prisma.user.findUnique({
@@ -480,7 +567,6 @@ export default class AuthService {
         };
     }
     // ================= TRANSFER STUDENT METHODS =================
-    // Get student by ID with class details
     static async getStudentById(studentId) {
         return prisma.student.findUnique({
             where: { id: studentId },
@@ -490,13 +576,11 @@ export default class AuthService {
             }
         });
     }
-    // Get class by ID
     static async getClassById(classId) {
         return prisma.class.findUnique({
             where: { id: classId }
         });
     }
-    // Transfer student to new class
     static async transferStudent(studentId, newClassId, reason, transferredBy) {
         return prisma.student.update({
             where: { id: studentId },
@@ -507,7 +591,7 @@ export default class AuthService {
             }
         });
     }
-    // ================= PUBLIC REGISTER (BLOCK STUDENTS) =================
+    // ================= PUBLIC REGISTER =================
     static async publicRegister(data) {
         if (data.role === 'STUDENT') {
             throw new Error('Student registration is not allowed publicly. Please contact school admin.');
@@ -620,16 +704,14 @@ export default class AuthService {
             data
         });
     }
-    // ================= DELETE USER (ENHANCED - UPDATED) =================
+    // ================= DELETE USER =================
     static async deleteUser(id) {
-        // First check if user exists
         const user = await prisma.user.findUnique({
             where: { id }
         });
         if (!user) {
             throw new Error('User not found');
         }
-        // Soft delete - update isActive to false AND status to 'REJECTED'
         return prisma.user.update({
             where: { id },
             data: {
@@ -728,13 +810,11 @@ export default class AuthService {
         });
     }
     // ================= STUDENT PROFILE METHODS =================
-    // Get student by user ID
     static async getStudentByUserId(userId) {
         return prisma.student.findUnique({
             where: { userId }
         });
     }
-    // Get student with full details (including user and class)
     static async getStudentWithDetails(userId) {
         return prisma.student.findUnique({
             where: { userId },
@@ -744,14 +824,12 @@ export default class AuthService {
             }
         });
     }
-    // Update student profile photo
     static async updateStudentPhoto(studentId, photoUrl) {
         return prisma.student.update({
             where: { id: studentId },
             data: { profilePhoto: photoUrl }
         });
     }
-    // Update student profile (limited fields)
     static async updateStudentProfile(userId, data) {
         const student = await prisma.student.findUnique({
             where: { userId }
@@ -776,8 +854,7 @@ export default class AuthService {
         }
         return updatedStudent;
     }
-    // ================= NEW: SUPERADMIN/ADMIN STUDENT MANAGEMENT METHODS =================
-    // ================= GET ALL STUDENTS WITH FULL DETAILS =================
+    // ================= SUPERADMIN/ADMIN STUDENT MANAGEMENT METHODS =================
     static async getAllStudentsWithDetails() {
         const students = await prisma.student.findMany({
             include: {
@@ -847,7 +924,6 @@ export default class AuthService {
             }
         }));
     }
-    // ================= GET ALL ADMINS =================
     static async getAllAdmins() {
         const admins = await prisma.user.findMany({
             where: {
@@ -870,7 +946,6 @@ export default class AuthService {
         });
         return admins;
     }
-    // ================= GET STUDENT DETAILS BY ID =================
     static async getStudentDetailsById(studentId) {
         const student = await prisma.student.findUnique({
             where: { id: studentId },
@@ -941,24 +1016,38 @@ export default class AuthService {
             }
         };
     }
-    // ================= GET STUDENT PHOTO BY ID =================
     static async getStudentPhotoById(studentId) {
+        console.log(`🔍 Looking for student with ID: ${studentId}`);
         const student = await prisma.student.findUnique({
             where: { id: studentId },
-            select: { profilePhoto: true }
+            select: { profilePhoto: true, userId: true, id: true }
         });
-        if (!student || !student.profilePhoto) {
+        if (!student) {
+            console.log(`❌ Student not found with ID: ${studentId}`);
             return null;
         }
-        const photoPath = path.join(process.cwd(), student.profilePhoto);
-        if (!fs.existsSync(photoPath)) {
+        console.log(`📸 Student found. Profile photo in DB: ${student.profilePhoto}`);
+        if (!student.profilePhoto) {
+            console.log(`❌ No profilePhoto field for student ID: ${studentId}`);
             return null;
         }
-        return photoPath;
+        const possiblePaths = [
+            path.join(process.cwd(), student.profilePhoto),
+            path.join(process.cwd(), 'uploads', 'students', path.basename(student.profilePhoto)),
+            path.join(__dirname, '../../', student.profilePhoto),
+            path.join(process.cwd(), 'src', '..', student.profilePhoto),
+        ];
+        for (const photoPath of possiblePaths) {
+            console.log(`🔍 Checking path: ${photoPath}`);
+            if (fs.existsSync(photoPath)) {
+                console.log(`✅ Found photo at: ${photoPath}`);
+                return photoPath;
+            }
+        }
+        console.log(`❌ No photo file found for student ID: ${studentId}`);
+        return null;
     }
-    // ================= UPDATE STUDENT STATUS =================
     static async updateStudentStatus(studentId, isActive) {
-        // First find the student to get userId
         const student = await prisma.student.findUnique({
             where: { id: studentId },
             include: { user: true }
@@ -966,12 +1055,10 @@ export default class AuthService {
         if (!student) {
             throw new Error('Student not found');
         }
-        // Update user active status
         const updatedUser = await prisma.user.update({
             where: { id: student.userId },
             data: { isActive: isActive }
         });
-        // Update student isActive status
         const updatedStudent = await prisma.student.update({
             where: { id: studentId },
             data: { isActive: isActive }
@@ -984,7 +1071,6 @@ export default class AuthService {
             isActive: updatedUser.isActive
         };
     }
-    // ================= RESET STUDENT PASSWORD =================
     static async resetStudentPassword(studentId) {
         const student = await prisma.student.findUnique({
             where: { id: studentId },
@@ -993,10 +1079,8 @@ export default class AuthService {
         if (!student) {
             throw new Error('Student not found');
         }
-        // Generate new random password
         const newPassword = `Student@${Math.random().toString(36).slice(-6)}`;
         const hashedPassword = await bcrypt.hash(newPassword, 10);
-        // Update user password
         await prisma.user.update({
             where: { id: student.userId },
             data: {
@@ -1011,7 +1095,6 @@ export default class AuthService {
             newPassword: newPassword
         };
     }
-    // ================= GET STUDENT STATISTICS =================
     static async getStudentStatistics() {
         const totalStudents = await prisma.student.count();
         const activeStudents = await prisma.student.count({
@@ -1023,22 +1106,6 @@ export default class AuthService {
         const femaleStudents = await prisma.student.count({
             where: { gender: 'FEMALE' }
         });
-        // Students by class
-        const studentsByClass = await prisma.$queryRaw `
-      SELECT c.name, c.section, COUNT(s.id) as count
-      FROM students s
-      JOIN classes c ON s.class_id = c.id
-      GROUP BY c.id, c.name, c.section
-      ORDER BY c.name, c.section
-    `;
-        // Students by blood group
-        const studentsByBloodGroup = await prisma.$queryRaw `
-      SELECT blood_group, COUNT(*) as count
-      FROM students
-      WHERE blood_group IS NOT NULL
-      GROUP BY blood_group
-    `;
-        // New students this month
         const startOfMonth = new Date();
         startOfMonth.setDate(1);
         startOfMonth.setHours(0, 0, 0, 0);
@@ -1058,22 +1125,17 @@ export default class AuthService {
                 female: femaleStudents,
                 other: totalStudents - maleStudents - femaleStudents
             },
-            newThisMonth: newStudentsThisMonth,
-            byClass: studentsByClass,
-            byBloodGroup: studentsByBloodGroup
+            newThisMonth: newStudentsThisMonth
         };
     }
-    // ================= EXPORT STUDENTS DATA =================
     static async exportStudentsData(format) {
         const students = await this.getAllStudentsWithDetails();
-        // Create CSV header
         const headers = [
             'Name', 'Email', 'Phone', 'Roll Number', 'Class', 'Section',
             'Date of Birth', 'Gender', 'Blood Group', 'Nationality', 'Religion',
             'Father Name', 'Mother Name', 'Parent Phone', 'Parent Email',
             'Address', 'City', 'State', 'Admission Date', 'Status'
         ];
-        // Create CSV rows
         const rows = students.map(s => [
             s.name,
             s.email,
@@ -1096,7 +1158,6 @@ export default class AuthService {
             s.student?.admissionDate ? new Date(s.student.admissionDate).toLocaleDateString() : '',
             s.isActive ? 'Active' : 'Inactive'
         ]);
-        // Convert to CSV string
         const csvContent = [
             headers.join(','),
             ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))

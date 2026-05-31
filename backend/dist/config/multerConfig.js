@@ -2,31 +2,39 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Use project root directory consistently
+const PROJECT_ROOT = process.cwd();
+
 // Ensure upload directories exist
 const createUploadDirs = () => {
     const dirs = [
-        path.join(__dirname, '../uploads/'),
-        path.join(__dirname, '../uploads/students/'),
-        path.join(__dirname, '../uploads/teachers/'),
-        path.join(__dirname, '../uploads/documents/')
+        path.join(PROJECT_ROOT, 'uploads/'),
+        path.join(PROJECT_ROOT, 'uploads/students/'),
+        path.join(PROJECT_ROOT, 'uploads/teachers/'),
+        path.join(PROJECT_ROOT, 'uploads/documents/')
     ];
     dirs.forEach(dir => {
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
+            console.log(`📁 Created directory: ${dir}`);
         }
     });
 };
+
 // Call this to create directories
 createUploadDirs();
+
 // ============================================
 // STUDENT PROFILE PHOTO CONFIGURATION
 // ============================================
-// Configure storage for student photos
 const studentStorage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, path.join(__dirname, '../uploads/students/'));
+        const dest = path.join(PROJECT_ROOT, 'uploads/students/');
+        cb(null, dest);
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -34,13 +42,14 @@ const studentStorage = multer.diskStorage({
         cb(null, `student-${uniqueSuffix}${ext}`);
     }
 });
+
 // ============================================
 // TEACHER PROFILE PHOTO CONFIGURATION
 // ============================================
-// Configure storage for teacher photos
 const teacherStorage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, path.join(__dirname, '../uploads/teachers/'));
+        const dest = path.join(PROJECT_ROOT, 'uploads/teachers/');
+        cb(null, dest);
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -48,10 +57,10 @@ const teacherStorage = multer.diskStorage({
         cb(null, `teacher-${uniqueSuffix}${ext}`);
     }
 });
+
 // ============================================
 // FILE FILTER (Common for all images)
 // ============================================
-// File filter for images only
 const imageFileFilter = (req, file, cb) => {
     const allowedImageTypes = /jpeg|jpg|png|gif|webp/;
     const extname = allowedImageTypes.test(path.extname(file.originalname).toLowerCase());
@@ -61,43 +70,43 @@ const imageFileFilter = (req, file, cb) => {
     }
     cb(new Error('Only image files (jpeg, jpg, png, gif, webp) are allowed'));
 };
+
 // ============================================
 // EXPORT MULTER MIDDLEWARES
 // ============================================
-// For single student profile photo upload (max 5MB)
 export const uploadStudentPhoto = multer({
     storage: studentStorage,
     limits: {
-        fileSize: 5 * 1024 * 1024, // 5MB limit
+        fileSize: 5 * 1024 * 1024,
     },
     fileFilter: imageFileFilter
 });
-// For single teacher profile photo upload (max 5MB)
+
 export const uploadTeacherPhoto = multer({
     storage: teacherStorage,
     limits: {
-        fileSize: 5 * 1024 * 1024, // 5MB limit
+        fileSize: 5 * 1024 * 1024,
     },
     fileFilter: imageFileFilter
 });
-// For multiple file uploads (max 10MB total)
+
 export const uploadMultiplePhotos = multer({
     storage: studentStorage,
     limits: {
-        fileSize: 5 * 1024 * 1024, // 5MB per file
-        files: 5 // Max 5 files
+        fileSize: 5 * 1024 * 1024,
+        files: 5
     },
     fileFilter: imageFileFilter
 });
-// Generic upload for any image
+
 export const uploadImage = multer({
     storage: studentStorage,
     limits: {
-        fileSize: 10 * 1024 * 1024, // 10MB limit
+        fileSize: 10 * 1024 * 1024,
     },
     fileFilter: imageFileFilter
 });
-// For document uploads (PDF, DOC, etc.)
+
 const documentFileFilter = (req, file, cb) => {
     const allowedDocTypes = /pdf|doc|docx|jpg|jpeg|png/;
     const extname = allowedDocTypes.test(path.extname(file.originalname).toLowerCase());
@@ -107,9 +116,11 @@ const documentFileFilter = (req, file, cb) => {
     }
     cb(new Error('Only documents (pdf, doc, docx) and images are allowed'));
 };
+
 const documentStorage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, path.join(__dirname, '../uploads/documents/'));
+        const dest = path.join(PROJECT_ROOT, 'uploads/documents/');
+        cb(null, dest);
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -117,11 +128,11 @@ const documentStorage = multer.diskStorage({
         cb(null, `doc-${uniqueSuffix}${ext}`);
     }
 });
+
 export const uploadDocument = multer({
     storage: documentStorage,
     limits: {
-        fileSize: 10 * 1024 * 1024, // 10MB limit
+        fileSize: 10 * 1024 * 1024,
     },
     fileFilter: documentFileFilter
 });
-//# sourceMappingURL=multerConfig.js.map

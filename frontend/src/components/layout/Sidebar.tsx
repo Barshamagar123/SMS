@@ -49,7 +49,7 @@ const Sidebar: React.FC = () => {
     { path: '/admin/classes', label: 'Classes', icon: BookOpen },
     { path: '/admin/subjects', label: 'Subjects', icon: BookMarked },
     { path: '/admin/teacher-assignments', label: 'Teacher Assignments', icon: UserPlus },
-    { path: '/admin/attendance', label: 'Attendance Reports', icon: Calendar },
+    { path: '/admin/attendance-reports', label: 'Attendance Reports', icon: Calendar },
     { path: '/admin/exams', label: 'Exams', icon: FileText },
     { path: '/admin/results', label: 'Results', icon: Award },
     { path: '/admin/report-cards', label: 'Report Cards', icon: Download },

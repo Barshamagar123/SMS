@@ -18,6 +18,11 @@ import AdminTeacherAssignments from './pages/admin/TeachersAssignments';
 import TeacherDashboard from './pages/teacher/Dashboard';
 import StudentDashboard from './pages/student/Dashboard';
 import ParentDashboard from './pages/parent/Dashboard';
+import AdminAttendanceReports from './pages/admin/AttendenceReports';
+
+import AdminExams from './pages/admin/Exams';
+
+
 
 const RoleBasedDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -130,6 +135,14 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+  path="/admin/attendance-reports"
+  element={
+    <ProtectedRoute>
+      <AdminAttendanceReports />
+    </ProtectedRoute>
+  }
+/>
         
         <Route
           path="/admin/teachers"
@@ -148,6 +161,15 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+  path="/admin/exams"
+  element={
+    <ProtectedRoute>
+      <AdminExams />
+    </ProtectedRoute>
+  }
+/>
+
         
         <Route
           path="/admin/classes"

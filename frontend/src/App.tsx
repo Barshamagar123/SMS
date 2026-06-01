@@ -12,11 +12,12 @@ import Teachers from './pages/superadmin/Teachers';
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminStudents from './pages/admin/Students';
 import AdminTeachers from './pages/admin/Teachers';
-import AdminClasses from './pages/admin/Classes';  // ← ADD THIS IMPORT
+import AdminClasses from './pages/admin/Classes';
+import AdminSubjects from './pages/admin/Subjects';
+import AdminTeacherAssignments from './pages/admin/TeachersAssignments';
 import TeacherDashboard from './pages/teacher/Dashboard';
 import StudentDashboard from './pages/student/Dashboard';
 import ParentDashboard from './pages/parent/Dashboard';
-import AdminSubjects from './pages/admin/Subjects';
 
 const RoleBasedDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -138,21 +139,31 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
-        <Route
-  path="/admin/subjects"
-  element={
-    <ProtectedRoute>
-      <AdminSubjects />
-    </ProtectedRoute>
-  }
-/>
         
-        {/* ← ADD THIS ROUTE FOR ADMIN CLASSES */}
+        <Route
+          path="/admin/subjects"
+          element={
+            <ProtectedRoute>
+              <AdminSubjects />
+            </ProtectedRoute>
+          }
+        />
+        
         <Route
           path="/admin/classes"
           element={
             <ProtectedRoute>
               <AdminClasses />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Admin Teacher Assignments Route */}
+        <Route
+          path="/admin/teacher-assignments"
+          element={
+            <ProtectedRoute>
+              <AdminTeacherAssignments />
             </ProtectedRoute>
           }
         />

@@ -1,95 +1,87 @@
 // src/pages/teacher/MyStudents.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Users, Search, Phone, Mail, Calendar, Loader2, User } from 'lucide-react';
-import { useClassStudents } from '../../hooks/useTeacherData';
+import { Sparkles, School, Users, Loader2, AlertCircle } from 'lucide-react';
+import { StudentList } from '../../components/teacher/StudentList';
+import toast from 'react-hot-toast';
+
+interface Student {
+  id: number;
+  rollNumber: string;
+  name: string;
+  email: string;
+  phone: string;
+  parentPhone: string;
+  admissionDate: string;
+}
 
 const TeacherMyStudents: React.FC = () => {
   const [searchParams] = useSearchParams();
   const classId = searchParams.get('classId');
-  const { students, loading, className } = useClassStudents(classId ? parseInt(classId) : null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [students, setStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [className, setClassName] = useState('');
 
-  const filteredStudents = students.filter(s =>
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.rollNumber.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  useEffect(() => {
+    if (classId) {
+      fetchStudents();
+    }
+  }, [classId]);
+
+  const fetchStudents = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`http://localhost:3000/api/teacher-assignments/class/${classId}/students`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setStudents(data.data?.students || []);
+        setClassName(data.data?.className || 'Class');
+      } else {
+        toast.error(data.message || 'Failed to load students');
+      }
+    } catch (error) {
+      console.error('Failed to fetch students:', error);
+      toast.error('Failed to load students');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl shadow-sm border p-6">
-        <h1 className="text-2xl font-bold text-gray-800">My Students</h1>
-        <p className="text-gray-500 text-sm mt-1">{className}</p>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm border p-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-          <input
-            type="text"
-            placeholder="Search by name or roll number..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-          />
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center py-20 bg-white rounded-xl">
-          <Loader2 size={40} className="animate-spin text-blue-500" />
-        </div>
-      ) : filteredStudents.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-xl border">
-          <Users size={48} className="mx-auto text-gray-300 mb-3" />
-          <p className="text-gray-500">No students found</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredStudents.map((student) => (
-            <div key={student.id} className="bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition">
-              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-4 text-white">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-                    <User size={24} className="text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold">{student.name}</h3>
-                    <p className="text-blue-100 text-sm">Roll No: {student.rollNumber}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="p-4 space-y-2">
-                {student.email && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Mail size={14} />
-                    <span>{student.email}</span>
-                  </div>
-                )}
-                {student.phone && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Phone size={14} />
-                    <span>{student.phone}</span>
-                  </div>
-                )}
-                {student.parentPhone && (
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <Phone size={14} />
-                    <span>Parent: {student.parentPhone}</span>
-                  </div>
-                )}
-                {student.admissionDate && (
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <Calendar size={14} />
-                    <span>Admission: {new Date(student.admissionDate).toLocaleDateString()}</span>
-                  </div>
-                )}
-              </div>
+      {/* Header */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-2xl shadow-xl">
+        <div className="relative z-10 p-8 text-white">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles size={20} className="text-yellow-300" />
+            <span className="text-sm font-medium">Students</span>
+          </div>
+          <h1 className="text-3xl font-bold">My Students</h1>
+          <p className="text-blue-100 mt-2">{className}</p>
+          <div className="flex items-center gap-3 mt-3">
+            <div className="flex items-center gap-1 bg-white/20 px-2 py-1 rounded-full text-sm">
+              <School size={14} />
+              <span>Class ID: {classId}</span>
             </div>
-          ))}
+            <div className="flex items-center gap-1 bg-white/20 px-2 py-1 rounded-full text-sm">
+              <Users size={14} />
+              <span>{students.length} Students</span>
+            </div>
+          </div>
         </div>
-      )}
+      </div>
+
+      {/* Student List */}
+      <StudentList
+        students={students}
+        loading={loading}
+        searchPlaceholder="Search by name or roll number..."
+      />
     </div>
   );
 };

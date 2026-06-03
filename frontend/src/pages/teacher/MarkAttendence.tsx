@@ -3,63 +3,169 @@
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { 
-  Calendar, CheckCircle, XCircle, Save, Loader2, RefreshCw,
-  Users, TrendingUp, Clock, Sparkles, School, AlertCircle,
-  ChevronLeft, ChevronRight, UserCheck, UserX
+  Calendar, Sparkles, School, Users, Save, 
+  Loader2, RefreshCw, AlertCircle, FileWarning
 } from 'lucide-react';
-import { useAttendanceStudents, useSaveAttendance } from '../../hooks/useTeacherData';
+import { AttendanceTable } from '../../components/teacher/AttendenceTable';
+import { StatsCards } from '../../components/teacher/StatsCards';
 import toast from 'react-hot-toast';
+
+interface Student {
+  id: number;
+  rollNumber: string;
+  name: string;
+  status: 'PRESENT' | 'ABSENT' | null;
+  attendanceId: number | null;
+}
 
 const TeacherMarkAttendance: React.FC = () => {
   const [searchParams] = useSearchParams();
   const classId = searchParams.get('classId');
   const className = searchParams.get('className') || 'Class';
   
+  const [students, setStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const { students, setStudents, loading, markedCount, setMarkedCount } = useAttendanceStudents(
-    classId ? parseInt(classId) : null, 
-    selectedDate
-  );
-  const { saveAttendance, saving } = useSaveAttendance();
+  const [error, setError] = useState<string | null>(null);
 
-  const handleStatusChange = (studentId: number, status: 'PRESENT' | 'ABSENT') => {
-    const oldStatus = students.find(s => s.id === studentId)?.status;
-    setStudents(prev => prev.map(s => 
-      s.id === studentId ? { ...s, status } : s
-    ));
+  React.useEffect(() => {
+    if (classId) {
+      fetchStudents();
+    }
+  }, [classId, selectedDate]);
+
+  const fetchStudents = async () => {
+    setLoading(true);
+    setError(null);
     
-    if (oldStatus === null && status !== null) {
-      setMarkedCount(prev => prev + 1);
-    } else if (oldStatus !== null && status === null) {
-      setMarkedCount(prev => prev - 1);
+    try {
+      const token = localStorage.getItem('accessToken');
+      console.log(`Fetching students for class ${classId} on date ${selectedDate}`);
+      
+      let studentsList = [];
+      
+      try {
+        const response = await fetch(`http://localhost:3000/api/teacher-assignments/class/${classId}/students`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        console.log('Teacher-assignments response:', data);
+        
+        if (data.success && data.data?.students) {
+          studentsList = data.data.students;
+        }
+      } catch (err) {
+        console.error('Error fetching from teacher-assignments:', err);
+      }
+      
+      if (studentsList.length === 0) {
+        try {
+          const response = await fetch(`http://localhost:3000/api/attendance/class/${classId}/students?date=${selectedDate}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const data = await response.json();
+          console.log('Attendance endpoint response:', data);
+          
+          if (data.success && data.data?.students) {
+            studentsList = data.data.students;
+          }
+        } catch (err) {
+          console.error('Error fetching from attendance endpoint:', err);
+        }
+      }
+      
+      const formattedStudents = studentsList.map((student: any) => ({
+        id: student.id || student.studentId,
+        rollNumber: student.rollNumber,
+        name: student.name || student.studentName,
+        status: student.status || null,
+        attendanceId: student.attendanceId || null
+      }));
+      
+      console.log('Formatted students:', formattedStudents);
+      setStudents(formattedStudents);
+      
+      if (formattedStudents.length === 0) {
+        setError('No students found in this class. Please ensure students are enrolled.');
+      }
+      
+    } catch (error) {
+      console.error('Failed to fetch students:', error);
+      setError('Failed to load students. Please try again.');
+      toast.error('Failed to load students');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleMarkAll = (status: 'PRESENT' | 'ABSENT') => {
-    setStudents(prev => prev.map(s => ({ ...s, status })));
-    const allCount = students.length;
-    setMarkedCount(status === 'PRESENT' ? allCount : allCount);
-    toast.success(`All students marked as ${status.toLowerCase()}`);
+  const handleStatusChange = (studentId: number, status: 'PRESENT' | 'ABSENT') => {
+    setStudents(prev => prev.map(s => 
+      s.id === studentId ? { ...s, status } : s
+    ));
+  };
+
+  const handleMarkAllPresent = () => {
+    if (students.length === 0) return;
+    setStudents(prev => prev.map(s => ({ ...s, status: 'PRESENT' })));
+    toast.success(`All students marked as present`);
+  };
+
+  const handleMarkAllAbsent = () => {
+    if (students.length === 0) return;
+    setStudents(prev => prev.map(s => ({ ...s, status: 'ABSENT' })));
+    toast.success(`All students marked as absent`);
   };
 
   const handleSave = async () => {
+    if (students.length === 0) {
+      toast.error('No students found in this class');
+      return;
+    }
+    
+    const markedCount = students.filter(s => s.status !== null).length;
     if (markedCount === 0) {
       toast.error('Please mark attendance for at least one student');
       return;
     }
     
-    const attendances = students.map(s => ({
-      studentId: s.id,
-      status: s.status || 'ABSENT'
-    }));
-
-    await saveAttendance(parseInt(classId!), selectedDate, attendances);
+    setSaving(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      const attendances = students.map(s => ({
+        studentId: s.id,
+        status: s.status || 'ABSENT'
+      }));
+      
+      const response = await fetch(`http://localhost:3000/api/attendance/class/${classId}/mark`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ date: selectedDate, attendances })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.success('Attendance saved successfully');
+        await fetchStudents();
+      } else {
+        toast.error(data.message || 'Failed to save attendance');
+      }
+    } catch (error) {
+      console.error('Failed to save attendance:', error);
+      toast.error('Failed to save attendance');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const presentCount = students.filter(s => s.status === 'PRESENT').length;
   const absentCount = students.filter(s => s.status === 'ABSENT').length;
   const notMarkedCount = students.length - presentCount - absentCount;
-  const completionPercentage = students.length > 0 ? (markedCount / students.length) * 100 : 0;
+  const completionPercentage = students.length > 0 ? ((presentCount + absentCount) / students.length) * 100 : 0;
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -70,9 +176,40 @@ const TeacherMarkAttendance: React.FC = () => {
     });
   };
 
+  const stats = [
+    { title: 'Total Students', value: students.length, icon: <Users size={20} />, color: 'text-blue-600', bgColor: 'bg-blue-100' },
+    { title: 'Present', value: presentCount, icon: <Users size={20} />, color: 'text-green-600', bgColor: 'bg-green-100' },
+    { title: 'Absent', value: absentCount, icon: <Users size={20} />, color: 'text-red-600', bgColor: 'bg-red-100' },
+    { title: 'Completion', value: `${completionPercentage.toFixed(0)}%`, icon: <Users size={20} />, color: 'text-purple-600', bgColor: 'bg-purple-100' },
+  ];
+
+  if (error && students.length === 0 && !loading) {
+    return (
+      <div className="space-y-6">
+        <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-2xl shadow-xl">
+          <div className="relative z-10 p-8 text-white">
+            <h1 className="text-3xl font-bold">Mark Attendance</h1>
+            <p className="text-blue-100 mt-2">{className}</p>
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl shadow-lg border p-16 text-center">
+          <FileWarning size={64} className="mx-auto text-yellow-500 mb-4" />
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">No Students Found</h3>
+          <p className="text-gray-500 mb-4">{error}</p>
+          <button 
+            onClick={fetchStudents}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Animated Header */}
+      {/* Header */}
       <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-2xl shadow-xl">
         <div className="absolute inset-0 bg-black/10"></div>
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 animate-pulse"></div>
@@ -104,8 +241,8 @@ const TeacherMarkAttendance: React.FC = () => {
         </div>
       </div>
 
-      {/* Date and Quick Actions Card */}
-      <div className="bg-white rounded-2xl shadow-lg border p-6">
+      {/* Date Selector */}
+      <div className="bg-white rounded-2xl shadow-lg border p-4">
         <div className="flex flex-wrap justify-between items-center gap-4">
           <div className="flex items-center gap-4">
             <div className="relative">
@@ -114,92 +251,40 @@ const TeacherMarkAttendance: React.FC = () => {
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                className="pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
               />
             </div>
             <button
-              onClick={() => window.location.reload()}
+              onClick={fetchStudents}
+              disabled={loading}
               className="p-2.5 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
               title="Refresh"
             >
-              <RefreshCw size={18} />
-            </button>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => handleMarkAll('PRESENT')}
-              className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-xl text-sm font-medium hover:bg-green-200 transition-all duration-200"
-            >
-              <UserCheck size={16} />
-              All Present
-            </button>
-            <button
-              onClick={() => handleMarkAll('ABSENT')}
-              className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-xl text-sm font-medium hover:bg-red-200 transition-all duration-200"
-            >
-              <UserX size={16} />
-              All Absent
+              <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
             </button>
           </div>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Students</p>
-              <p className="text-2xl font-bold text-blue-700">{students.length}</p>
-            </div>
-            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-              <Users size={18} className="text-blue-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Present</p>
-              <p className="text-2xl font-bold text-green-700">{presentCount}</p>
-            </div>
-            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-              <CheckCircle size={18} className="text-green-600" />
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        {stats.map((stat, index) => (
+          <div key={index} className={`bg-gradient-to-br ${stat.bgColor === 'bg-blue-100' ? 'from-blue-50 to-indigo-50' : stat.bgColor === 'bg-green-100' ? 'from-green-50 to-emerald-50' : stat.bgColor === 'bg-red-100' ? 'from-red-50 to-rose-50' : 'from-purple-50 to-pink-50'} rounded-xl p-4 border`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">{stat.title}</p>
+                <p className="text-2xl font-bold text-gray-800">{stat.value}</p>
+              </div>
+              <div className={`w-10 h-10 ${stat.bgColor} rounded-full flex items-center justify-center`}>
+                <div className={stat.color}>{stat.icon}</div>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-xl p-4 border border-red-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Absent</p>
-              <p className="text-2xl font-bold text-red-700">{absentCount}</p>
-            </div>
-            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-              <XCircle size={18} className="text-red-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Completion</p>
-              <p className="text-2xl font-bold text-purple-700">{completionPercentage.toFixed(0)}%</p>
-            </div>
-            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-              <TrendingUp size={18} className="text-purple-600" />
-            </div>
-          </div>
-          <div className="mt-2 w-full bg-purple-200 rounded-full h-1.5">
-            <div 
-              className="bg-purple-600 h-1.5 rounded-full transition-all duration-500"
-              style={{ width: `${completionPercentage}%` }}
-            ></div>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Progress Alert */}
-      {notMarkedCount > 0 && (
+      {notMarkedCount > 0 && students.length > 0 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 flex items-center gap-3">
           <AlertCircle size={18} className="text-yellow-600" />
           <p className="text-sm text-yellow-800">
@@ -208,138 +293,29 @@ const TeacherMarkAttendance: React.FC = () => {
         </div>
       )}
 
-      {/* Students Table */}
-      {loading ? (
-        <div className="flex justify-center py-20 bg-white rounded-2xl shadow-lg">
-          <div className="text-center">
-            <Loader2 size={48} className="animate-spin text-blue-500 mx-auto mb-4" />
-            <p className="text-gray-500">Loading students...</p>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-white rounded-2xl shadow-lg border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Roll No</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Student Name</th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700">Attendance Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {students.map((student, idx) => (
-                  <tr key={student.id} className="hover:bg-gray-50 transition-colors group">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white text-xs font-bold">
-                          {student.rollNumber}
-                        </div>
-                        <span className="font-mono text-sm text-gray-600">#{student.rollNumber}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-blue-100 to-indigo-100 flex items-center justify-center">
-                          <span className="text-blue-600 font-semibold">
-                            {student.name.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-800">{student.name}</p>
-                          <p className="text-xs text-gray-400">ID: {student.id}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <div className="flex items-center justify-center gap-4">
-                        <button
-                          onClick={() => handleStatusChange(student.id, 'PRESENT')}
-                          className={`group relative flex flex-col items-center gap-1 transition-all duration-200 ${
-                            student.status === 'PRESENT'
-                              ? 'scale-105'
-                              : 'opacity-60 hover:opacity-100'
-                          }`}
-                        >
-                          <div className={`p-2.5 rounded-xl transition-all duration-200 ${
-                            student.status === 'PRESENT'
-                              ? 'bg-green-500 shadow-lg shadow-green-200'
-                              : 'bg-gray-100 group-hover:bg-green-100'
-                          }`}>
-                            <CheckCircle size={20} className={
-                              student.status === 'PRESENT'
-                                ? 'text-white'
-                                : 'text-gray-400 group-hover:text-green-600'
-                            } />
-                          </div>
-                          <span className={`text-xs font-medium ${
-                            student.status === 'PRESENT'
-                              ? 'text-green-600'
-                              : 'text-gray-500'
-                          }`}>
-                            Present
-                          </span>
-                        </button>
-                        <button
-                          onClick={() => handleStatusChange(student.id, 'ABSENT')}
-                          className={`group relative flex flex-col items-center gap-1 transition-all duration-200 ${
-                            student.status === 'ABSENT'
-                              ? 'scale-105'
-                              : 'opacity-60 hover:opacity-100'
-                          }`}
-                        >
-                          <div className={`p-2.5 rounded-xl transition-all duration-200 ${
-                            student.status === 'ABSENT'
-                              ? 'bg-red-500 shadow-lg shadow-red-200'
-                              : 'bg-gray-100 group-hover:bg-red-100'
-                          }`}>
-                            <XCircle size={20} className={
-                              student.status === 'ABSENT'
-                                ? 'text-white'
-                                : 'text-gray-400 group-hover:text-red-600'
-                            } />
-                          </div>
-                          <span className={`text-xs font-medium ${
-                            student.status === 'ABSENT'
-                              ? 'text-red-600'
-                              : 'text-gray-500'
-                          }`}>
-                            Absent
-                          </span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      {/* Attendance Table */}
+      <AttendanceTable
+        students={students}
+        loading={loading}
+        onStatusChange={handleStatusChange}
+        onMarkAllPresent={handleMarkAllPresent}
+        onMarkAllAbsent={handleMarkAllAbsent}
+        presentCount={presentCount}
+        absentCount={absentCount}
+        notMarkedCount={notMarkedCount}
+      />
 
-          {/* Footer Actions */}
-          <div className="p-5 border-t bg-gray-50 flex flex-wrap justify-between items-center gap-4">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span className="text-sm text-gray-600">Present: {presentCount}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <span className="text-sm text-gray-600">Absent: {absentCount}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
-                <span className="text-sm text-gray-600">Pending: {notMarkedCount}</span>
-              </div>
-            </div>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 disabled:opacity-50"
-            >
-              {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-              {saving ? 'Saving Attendance...' : 'Save Attendance'}
-            </button>
-          </div>
+      {/* Save Button */}
+      {students.length > 0 && (
+        <div className="flex justify-end">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 disabled:opacity-50"
+          >
+            {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+            {saving ? 'Saving Attendance...' : 'Save Attendance'}
+          </button>
         </div>
       )}
     </div>

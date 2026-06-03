@@ -1,18 +1,68 @@
 // src/pages/teacher/MyResults.tsx
 
-import React, { useState } from 'react';
-import { Award, TrendingUp, Users, CheckCircle, XCircle, Eye, Loader2, Calendar, Lock } from 'lucide-react';
-import { useTeacherResultsSummary } from '../../hooks/useTeacherData';
-import type { ExamResultsSummary } from '../../types/teacher';
+import React, { useState, useEffect } from 'react';
+import { Award, Eye, Loader2, Sparkles, Lock, Calendar, TrendingUp, Users, CheckCircle, XCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
+
+interface ExamResult {
+  examId: number;
+  examName: string;
+  examType: string;
+  examDate: string;
+  className: string;
+  subjectName: string;
+  maxMarks: number;
+  passingMarks: number;
+  isLocked: boolean;
+  statistics: {
+    totalStudents: number;
+    passedStudents: number;
+    failedStudents: number;
+    passPercentage: number;
+    averageMarks: number;
+    highestMarks: number;
+    lowestMarks: number;
+  };
+}
 
 const TeacherMyResults: React.FC = () => {
-  const { results, loading } = useTeacherResultsSummary();
-  const [selectedResult, setSelectedResult] = useState<ExamResultsSummary | null>(null);
+  const [results, setResults] = useState<ExamResult[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedResult, setSelectedResult] = useState<ExamResult | null>(null);
   const [showModal, setShowModal] = useState(false);
 
-  const handleViewDetails = (result: ExamResultsSummary) => {
-    setSelectedResult(result);
-    setShowModal(true);
+  useEffect(() => {
+    fetchResults();
+  }, []);
+
+  const fetchResults = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      
+      const activeYearRes = await fetch('http://localhost:3000/api/teacher-assignments/academic-years/active', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const activeYearData = await activeYearRes.json();
+      
+      if (activeYearData.success && activeYearData.data) {
+        const response = await fetch(`http://localhost:3000/api/teacher-assignments/my-results-summary?academicYearId=${activeYearData.data.id}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+          setResults(data.data?.results || []);
+        } else {
+          toast.error(data.message || 'Failed to load results');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch results:', error);
+      toast.error('Failed to load results');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const ResultModal = () => {
@@ -77,39 +127,46 @@ const TeacherMyResults: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 size={40} className="animate-spin text-blue-500" />
+      <div className="flex justify-center items-center h-96">
+        <Loader2 size={48} className="animate-spin text-blue-500" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl shadow-sm border p-6">
-        <h1 className="text-2xl font-bold text-gray-800">Exam Results</h1>
-        <p className="text-gray-500 text-sm mt-1">View performance summary of your exams</p>
+      {/* Header */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-2xl shadow-xl">
+        <div className="relative z-10 p-8 text-white">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles size={20} className="text-yellow-300" />
+            <span className="text-sm font-medium">Results</span>
+          </div>
+          <h1 className="text-3xl font-bold">My Results</h1>
+          <p className="text-blue-100 mt-2">View performance summary of your exams</p>
+        </div>
       </div>
 
       {results.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-xl border">
-          <Award size={48} className="mx-auto text-gray-300 mb-3" />
-          <p className="text-gray-500">No exam results available</p>
+        <div className="text-center py-20 bg-white rounded-2xl shadow-lg border">
+          <Award size={64} className="mx-auto text-gray-300 mb-4" />
+          <p className="text-gray-500 text-lg">No exam results available</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {results.map((result) => (
-            <div key={result.examId} className="bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition">
-              <div className={`p-4 text-white ${result.isLocked ? 'bg-gradient-to-r from-gray-600 to-gray-700' : 'bg-gradient-to-r from-blue-600 to-indigo-600'}`}>
+            <div key={result.examId} className="bg-white rounded-2xl shadow-lg border overflow-hidden hover:shadow-xl transition">
+              <div className={`p-5 text-white ${result.isLocked ? 'bg-gradient-to-r from-gray-600 to-gray-700' : 'bg-gradient-to-r from-blue-600 to-indigo-600'}`}>
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-bold">{result.examName}</h3>
+                    <h3 className="font-bold text-lg">{result.examName}</h3>
                     <p className="text-sm opacity-90">{result.className}</p>
                     <p className="text-xs opacity-75 mt-1">{result.subjectName}</p>
                   </div>
-                  {result.isLocked ? <Lock size={16} /> : <Award size={16} />}
+                  {result.isLocked ? <Lock size={18} /> : <Award size={18} />}
                 </div>
               </div>
-              <div className="p-4 space-y-3">
+              <div className="p-5 space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Pass Percentage</span>
                   <span className="text-lg font-bold text-green-600">{result.statistics.passPercentage}%</span>
@@ -123,10 +180,13 @@ const TeacherMyResults: React.FC = () => {
                   <span className="text-lg font-bold text-purple-600">{result.statistics.highestMarks}</span>
                 </div>
                 <button
-                  onClick={() => handleViewDetails(result)}
-                  className="w-full mt-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition flex items-center justify-center gap-2"
+                  onClick={() => {
+                    setSelectedResult(result);
+                    setShowModal(true);
+                  }}
+                  className="w-full mt-3 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition flex items-center justify-center gap-2"
                 >
-                  <Eye size={14} />
+                  <Eye size={16} />
                   View Details
                 </button>
               </div>

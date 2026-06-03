@@ -19,29 +19,56 @@ export const useTeacherData = () => {
   const [profile, setProfile] = useState<TeacherProfile | null>(null);
   const [myClasses, setMyClasses] = useState<TeacherClass[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchProfile = useCallback(async () => {
     try {
       const response = await teacherAssignmentApi.getProfile();
-      setProfile(response.data);
-    } catch (error) {
+      if (response.data) {
+        setProfile(response.data);
+      }
+      return response.data;
+    } catch (error: any) {
       console.error('Failed to fetch profile:', error);
+      setError(error.message);
+      return null;
     }
   }, []);
 
   const fetchMyClasses = useCallback(async () => {
     try {
       const response = await teacherAssignmentApi.getMyClasses();
-      setMyClasses(response.data.classes || []);
-    } catch (error) {
+      console.log('MyClasses API Response:', response.data);
+      
+      // Handle different response structures
+      let classes = [];
+      if (response.data?.classes) {
+        classes = response.data.classes;
+      } else if (Array.isArray(response.data)) {
+        classes = response.data;
+      } else if (response.data?.data?.classes) {
+        classes = response.data.data.classes;
+      }
+      
+      setMyClasses(classes || []);
+      return classes;
+    } catch (error: any) {
       console.error('Failed to fetch classes:', error);
+      setError(error.message);
+      return [];
     }
   }, []);
 
   const fetchAllData = useCallback(async () => {
     setLoading(true);
-    await Promise.all([fetchProfile(), fetchMyClasses()]);
-    setLoading(false);
+    setError(null);
+    try {
+      await Promise.all([fetchProfile(), fetchMyClasses()]);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [fetchProfile, fetchMyClasses]);
 
   useEffect(() => {
@@ -52,6 +79,7 @@ export const useTeacherData = () => {
     profile,
     myClasses,
     loading,
+    error,
     refreshData: fetchAllData,
     fetchProfile,
     fetchMyClasses
@@ -71,8 +99,8 @@ export const useClassStudents = (classId: number | null) => {
       setLoading(true);
       try {
         const response = await teacherAssignmentApi.getClassStudents(classId);
-        setStudents(response.data.students || []);
-        setClassName(response.data.className || 'Class');
+        setStudents(response.data?.students || []);
+        setClassName(response.data?.className || 'Class');
       } catch (error) {
         console.error('Failed to fetch students:', error);
         toast.error('Failed to load students');
@@ -121,7 +149,7 @@ export const useTeacherSchedule = () => {
       setLoading(true);
       try {
         const response = await teacherAssignmentApi.getSchedule();
-        setSchedule(response.data.schedule || []);
+        setSchedule(response.data?.schedule || []);
       } catch (error) {
         console.error('Failed to fetch schedule:', error);
       } finally {
@@ -145,7 +173,7 @@ export const useTeacherResultsSummary = (academicYearId?: number) => {
       setLoading(true);
       try {
         const response = await teacherAssignmentApi.getMyResultsSummary(academicYearId);
-        setResults(response.data.results || []);
+        setResults(response.data?.results || []);
       } catch (error) {
         console.error('Failed to fetch results:', error);
       } finally {
@@ -187,20 +215,79 @@ export const useAttendanceStudents = (classId: number | null, date: string) => {
   const [students, setStudents] = useState<AttendanceStudent[]>([]);
   const [loading, setLoading] = useState(false);
   const [markedCount, setMarkedCount] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!classId) return;
+    if (!classId) {
+      console.log('No classId provided, skipping attendance fetch');
+      return;
+    }
 
     const fetchStudents = async () => {
       setLoading(true);
+      setError(null);
+      
       try {
-        const response = await teacherAssignmentApi.getStudentsForAttendance(classId, date);
-        const studentsList = response.data.students || [];
-        setStudents(studentsList);
-        const marked = studentsList.filter((s: AttendanceStudent) => s.status !== null).length;
+        console.log(`Fetching attendance students for class ${classId} on date ${date}`);
+        
+        // First, try to get students from teacher-assignments endpoint
+        let studentsList = [];
+        
+        try {
+          const token = localStorage.getItem('accessToken');
+          const response = await fetch(`http://localhost:3000/api/teacher-assignments/class/${classId}/students`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const data = await response.json();
+          console.log('Teacher-assignments response:', data);
+          
+          if (data.success && data.data?.students) {
+            studentsList = data.data.students;
+          }
+        } catch (err) {
+          console.error('Error fetching from teacher-assignments:', err);
+        }
+        
+        // If no students found, try the attendance endpoint
+        if (studentsList.length === 0) {
+          try {
+            const token = localStorage.getItem('accessToken');
+            const response = await fetch(`http://localhost:3000/api/attendance/class/${classId}/students?date=${date}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            console.log('Attendance endpoint response:', data);
+            
+            if (data.success && data.data?.students) {
+              studentsList = data.data.students;
+            }
+          } catch (err) {
+            console.error('Error fetching from attendance endpoint:', err);
+          }
+        }
+        
+        // Format students for the table
+        const formattedStudents = studentsList.map((student: any) => ({
+          id: student.id || student.studentId,
+          rollNumber: student.rollNumber,
+          name: student.name || student.studentName,
+          status: student.status || null,
+          attendanceId: student.attendanceId || null
+        }));
+        
+        console.log('Formatted students:', formattedStudents);
+        setStudents(formattedStudents);
+        
+        const marked = formattedStudents.filter((s: AttendanceStudent) => s.status !== null).length;
         setMarkedCount(marked);
+        
+        if (formattedStudents.length === 0) {
+          setError('No students found in this class. Please ensure students are enrolled.');
+        }
+        
       } catch (error) {
-        console.error('Failed to fetch students:', error);
+        console.error('Failed to fetch attendance students:', error);
+        setError('Failed to load students. Please try again.');
         toast.error('Failed to load students');
       } finally {
         setLoading(false);
@@ -210,7 +297,7 @@ export const useAttendanceStudents = (classId: number | null, date: string) => {
     fetchStudents();
   }, [classId, date]);
 
-  return { students, setStudents, loading, markedCount, setMarkedCount };
+  return { students, setStudents, loading, markedCount, setMarkedCount, error };
 };
 
 // ==================== GET STUDENTS FOR MARKS ENTRY HOOK ====================
@@ -255,9 +342,9 @@ export const useSaveAttendance = () => {
       const response = await teacherAssignmentApi.markAttendance(classId, date, attendances);
       toast.success('Attendance saved successfully');
       return response;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save attendance:', error);
-      toast.error('Failed to save attendance');
+      toast.error(error.response?.data?.message || 'Failed to save attendance');
       throw error;
     } finally {
       setSaving(false);
@@ -277,9 +364,9 @@ export const useSaveMarks = () => {
       const response = await teacherAssignmentApi.submitMarks(examId, marks);
       toast.success('Marks saved successfully');
       return response;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save marks:', error);
-      toast.error('Failed to save marks');
+      toast.error(error.response?.data?.message || 'Failed to save marks');
       throw error;
     } finally {
       setSaving(false);

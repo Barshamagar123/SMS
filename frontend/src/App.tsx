@@ -19,6 +19,9 @@ import TeacherDashboard from './pages/teacher/Dashboard';
 import StudentDashboard from './pages/student/Dashboard';
 import ParentDashboard from './pages/parent/Dashboard';
 import AdminAttendanceReports from './pages/admin/AttendenceReports';
+import AdminResults from './pages/admin/Results';
+import AdminReportCards from './pages/admin/ReportCards';
+import AdminHolidays from './pages/admin/Holidays';
 
 import AdminExams from './pages/admin/Exams';
 
@@ -125,6 +128,22 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+  path="/admin/report-cards"
+  element={
+    <ProtectedRoute>
+      <AdminReportCards />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/admin/holidays"
+  element={
+    <ProtectedRoute>
+      <AdminHolidays />
+    </ProtectedRoute>
+  }
+/>
         
         {/* Admin Routes */}
         <Route
@@ -140,6 +159,15 @@ const AppRoutes: React.FC = () => {
   element={
     <ProtectedRoute>
       <AdminAttendanceReports />
+    </ProtectedRoute>
+  }
+
+/>
+<Route
+  path="/admin/results"
+  element={
+    <ProtectedRoute>
+      <AdminResults />
     </ProtectedRoute>
   }
 />

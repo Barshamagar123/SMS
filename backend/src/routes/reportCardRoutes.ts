@@ -16,5 +16,5 @@ router.get('/exam/:examId/students', authenticate, getStudentsForBulkDownload);
 
 // Bulk download report cards (Admin/Teacher)
 router.post('/exam/:examId/bulk-download', authenticate, bulkDownloadReportCards);
-
+// router.get('/my-cards', authenticate, getMyReportCards);
 export default router;

@@ -1,6 +1,6 @@
 // src/pages/teacher/MyClasses.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   BookOpen, 
@@ -19,20 +19,126 @@ import {
   Eye,
   BarChart3,
   CheckCircle,
-  School
+  School,
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
-import { useTeacherData } from '../../hooks/useTeacherData';
+import toast from 'react-hot-toast';
+
+interface TeacherClass {
+  classId: number;
+  subjectId: number;
+  displayName: string;
+  subjectName: string;
+  subjectCode: string;
+  isPrimary: boolean;
+  studentCount?: number;
+}
 
 const TeacherMyClasses: React.FC = () => {
-  const { myClasses, loading } = useTeacherData();
+  const [myClasses, setMyClasses] = useState<TeacherClass[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  useEffect(() => {
+    fetchMyClasses();
+  }, []);
+
+  const fetchMyClasses = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const token = localStorage.getItem('accessToken');
+      
+      if (!token) {
+        setError('No authentication token found. Please login again.');
+        setLoading(false);
+        return;
+      }
+
+      // Fetch teacher's assigned classes
+      const response = await fetch('http://localhost:3000/api/teacher-assignments/my-classes', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      const data = await response.json();
+      console.log('API Response:', data);
+      
+      if (data.success) {
+        let classes = [];
+        
+        // Handle different response structures
+        if (data.data?.classes) {
+          classes = data.data.classes;
+        } else if (Array.isArray(data.data)) {
+          classes = data.data;
+        } else if (Array.isArray(data)) {
+          classes = data;
+        }
+        
+        // Format classes and fetch student counts
+        const formattedClasses = await Promise.all(classes.map(async (cls: any) => {
+          const classId = cls.classId || cls.id;
+          
+          // Fetch student count for this class
+          let studentCount = 0;
+          try {
+            const studentsRes = await fetch(`http://localhost:3000/api/teacher-assignments/class/${classId}/students`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const studentsData = await studentsRes.json();
+            if (studentsData.success) {
+              studentCount = studentsData.data?.students?.length || 0;
+            }
+          } catch (err) {
+            console.error(`Failed to fetch students for class ${classId}:`, err);
+          }
+          
+          return {
+            classId: classId,
+            subjectId: cls.subjectId || cls.subject?.id,
+            displayName: cls.displayName || cls.className || `${cls.class?.name || cls.name} ${cls.class?.section || cls.section || ''}`,
+            subjectName: cls.subjectName || cls.subject?.name,
+            subjectCode: cls.subjectCode || cls.subject?.code,
+            isPrimary: cls.isPrimary || false,
+            studentCount: studentCount
+          };
+        }));
+        
+        setMyClasses(formattedClasses);
+      } else {
+        setError(data.message || 'Failed to fetch classes');
+        toast.error(data.message || 'Failed to fetch classes');
+      }
+    } catch (err) {
+      console.error('Error fetching classes:', err);
+      setError('Failed to load classes. Please check your connection.');
+      toast.error('Failed to load classes');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchMyClasses();
+    toast.success('Classes refreshed');
+  };
 
   const filteredClasses = myClasses.filter(cls =>
     cls.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cls.subjectName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cls.subjectCode?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const primaryCount = myClasses.filter(c => c.isPrimary).length;
+  const secondaryCount = myClasses.length - primaryCount;
+  const totalStudents = myClasses.reduce((sum, cls) => sum + (cls.studentCount || 0), 0);
 
   if (loading) {
     return (
@@ -50,8 +156,22 @@ const TeacherMyClasses: React.FC = () => {
     );
   }
 
-  const primaryCount = myClasses.filter(c => c.isPrimary).length;
-  const secondaryCount = myClasses.length - primaryCount;
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <div className="text-center">
+          <AlertCircle size={48} className="text-red-500 mx-auto mb-4" />
+          <p className="text-gray-700 mb-2">{error}</p>
+          <button 
+            onClick={fetchMyClasses}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -71,6 +191,13 @@ const TeacherMyClasses: React.FC = () => {
               <p className="text-blue-100 mt-2">View and manage all your teaching assignments</p>
             </div>
             <div className="flex items-center gap-2">
+              <button 
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="bg-white/20 backdrop-blur rounded-lg p-2 hover:bg-white/30 transition-all"
+              >
+                <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
+              </button>
               <div className="bg-white/20 backdrop-blur rounded-lg px-3 py-2">
                 <span className="text-sm">{myClasses.length} Classes</span>
               </div>
@@ -106,11 +233,11 @@ const TeacherMyClasses: React.FC = () => {
         <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Secondary Classes</p>
-              <p className="text-2xl font-bold text-purple-700">{secondaryCount}</p>
+              <p className="text-sm text-gray-600">Total Students</p>
+              <p className="text-2xl font-bold text-purple-700">{totalStudents}</p>
             </div>
             <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-              <Award size={18} className="text-purple-600" />
+              <Users size={18} className="text-purple-600" />
             </div>
           </div>
         </div>
@@ -193,6 +320,10 @@ const TeacherMyClasses: React.FC = () => {
                             Primary
                           </span>
                         )}
+                        <span className="inline-flex items-center gap-1 text-xs bg-white/20 px-2 py-0.5 rounded-full">
+                          <Users size={10} />
+                          {cls.studentCount} Students
+                        </span>
                       </div>
                     </div>
                     <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -228,7 +359,7 @@ const TeacherMyClasses: React.FC = () => {
                   >
                     <span className="flex items-center gap-2">
                       <Users size={16} />
-                      View Students
+                      View Students ({cls.studentCount})
                     </span>
                     <ChevronRight size={16} className="group-hover/link:translate-x-1 transition-transform" />
                   </Link>
@@ -256,7 +387,7 @@ const TeacherMyClasses: React.FC = () => {
                 <tr>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Class</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Subject</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Code</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Students</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Type</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Actions</th>
                 </tr>
@@ -271,7 +402,7 @@ const TeacherMyClasses: React.FC = () => {
                         </div>
                         <div>
                           <p className="font-semibold text-gray-800">{cls.displayName}</p>
-                          <p className="text-xs text-gray-500">Class ID: {cls.classId}</p>
+                          <p className="text-xs text-gray-500">ID: {cls.classId}</p>
                         </div>
                       </div>
                     </td>
@@ -279,10 +410,14 @@ const TeacherMyClasses: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <BookOpen size={14} className="text-gray-400" />
                         <span className="text-gray-700">{cls.subjectName}</span>
+                        <span className="text-xs text-gray-400 ml-1">({cls.subjectCode})</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="font-mono text-sm text-gray-600">{cls.subjectCode}</span>
+                      <div className="flex items-center gap-1">
+                        <Users size={14} className="text-gray-400" />
+                        <span className="text-sm text-gray-600">{cls.studentCount}</span>
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       {cls.isPrimary ? (
@@ -341,6 +476,10 @@ const TeacherMyClasses: React.FC = () => {
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
                 <span className="text-sm text-gray-600">{secondaryCount} Secondary Classes</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span className="text-sm text-gray-600">{totalStudents} Total Students</span>
               </div>
             </div>
             <div className="flex items-center gap-2">

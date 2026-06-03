@@ -118,6 +118,106 @@ export const authApi = {
     api.post(`/auth/students/${studentId}/reset-password`),
 };
 
+// ==================== TEACHER ASSIGNMENT API (Teacher Dashboard) ====================
+export const teacherAssignmentApi = {
+  // Get teacher's assigned classes
+  getMyClasses: () => api.get('/teacher-assignments/my-classes'),
+  
+  // Get students in a specific class
+  getClassStudents: (classId: number) => 
+    api.get(`/teacher-assignments/class/${classId}/students`),
+  
+  // Get teacher's schedule/timetable
+  getSchedule: () => api.get('/teacher-assignments/schedule'),
+  
+  // Get teacher's exam results summary
+  getMyResultsSummary: (academicYearId?: number) => 
+    api.get('/teacher-assignments/my-results-summary', { params: { academicYearId } }),
+  
+  // Get all assignments (admin/teacher)
+  getAllAssignments: () => api.get('/teacher-assignments'),
+  
+  // Get assignments by academic year
+  getAssignmentsByAcademicYear: (academicYearId: number) => 
+    api.get(`/teacher-assignments/academic-year/${academicYearId}`),
+  
+  // Get current year assignments
+  getCurrentYearAssignments: () => api.get('/teacher-assignments/current-year'),
+  
+  // Get teacher profile
+  getProfile: () => api.get('/auth/teachers/me'),
+  
+  // Update profile
+  updateProfile: (data: { phone?: string; address?: string }) => 
+    api.put('/auth/me/profile', data),
+  
+  // Upload photo
+  uploadPhoto: (file: File) => {
+    const formData = new FormData();
+    formData.append('photo', file);
+    return api.post('/auth/teachers/me/photo', formData, { 
+      headers: { 'Content-Type': 'multipart/form-data' } 
+    });
+  },
+  
+  // Delete photo
+  deletePhoto: () => api.delete('/auth/teachers/me/photo'),
+  
+  // Change password
+  changePassword: (data: { currentPassword: string; newPassword: string }) => 
+    api.post('/auth/change-password', data),
+  
+  // Get students for attendance
+  getStudentsForAttendance: (classId: number, date?: string) => 
+    api.get(`/attendance/class/${classId}/students`, { params: { date } }),
+  
+  // Mark attendance
+  markAttendance: (classId: number, date: string, attendances: any[]) => 
+    api.post(`/attendance/class/${classId}/mark`, { date, attendances }),
+  
+  // Get teacher's exams
+  getMyExams: (academicYearId?: number) => 
+    api.get('/exams/teacher/my-exams', { params: { academicYearId } }),
+  
+  // Get students for marks entry
+  getStudentsForMarks: (examId: number) => 
+    api.get(`/exams/${examId}/students`),
+  
+  // Submit marks
+  submitMarks: (examId: number, marks: any[]) => 
+    api.post(`/exams/${examId}/marks`, { marks }),
+  
+  // Get exam results
+  getExamResults: (examId: number) => 
+    api.get(`/exams/${examId}/results`),
+};
+
+// ==================== ACADEMIC YEAR API ====================
+export const academicYearApi = {
+  // Get all academic years
+  getAll: () => api.get('/teacher-assignments/academic-years'),
+  
+  // Get active academic year
+  getActive: () => api.get('/teacher-assignments/academic-years/active'),
+  
+  // Get academic year by ID
+  getById: (id: number) => api.get(`/teacher-assignments/academic-years/${id}`),
+  
+  // Create academic year (Admin only)
+  create: (data: { year: string; startDate: string; endDate: string; isActive: boolean }) => 
+    api.post('/teacher-assignments/academic-years', data),
+  
+  // Update academic year (Admin only)
+  update: (id: number, data: { year?: string; startDate?: string; endDate?: string; isActive?: boolean }) => 
+    api.put(`/teacher-assignments/academic-years/${id}`, data),
+  
+  // Delete academic year (Admin only)
+  delete: (id: number) => api.delete(`/teacher-assignments/academic-years/${id}`),
+  
+  // Set active year (Admin only)
+  setActive: (id: number) => api.patch(`/teacher-assignments/academic-years/${id}/set-active`),
+};
+
 // ==================== CLASS API ====================
 export const classApi = {
   getAll: () => api.get('/classes'),

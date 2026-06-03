@@ -4,6 +4,9 @@ export declare const assignTeacherToSubject: (req: AuthenticatedRequest, res: Re
 export declare const getAllAssignments: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
 export declare const deleteAssignment: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
 export declare const getTeacherClasses: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const getStudentsByClass: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const getTeacherSchedule: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const getMyResultsSummary: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
 export declare const createAcademicYear: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
 export declare const getAllAcademicYears: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
 export declare const getActiveAcademicYear: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;

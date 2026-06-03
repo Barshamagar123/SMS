@@ -22,6 +22,8 @@ import {
   Download,
   GraduationCap,
   Gift,
+  TrendingUp,
+  Clock
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
@@ -67,6 +69,12 @@ const Sidebar: React.FC = () => {
     { path: '/mark-attendance', label: 'Mark Attendance', icon: Calendar },
     { path: '/enter-marks', label: 'Enter Marks', icon: FileText },
     { path: '/profile', label: 'Profile', icon: UserCircle },
+        { path: '/my-students', label: 'My Students', icon: Users },
+            { path: '/schedule', label: 'Schedule', icon: Clock },
+    { path: '/my-results', label: 'My Results', icon: TrendingUp },
+
+
+
   ];
 
   // Student Menu

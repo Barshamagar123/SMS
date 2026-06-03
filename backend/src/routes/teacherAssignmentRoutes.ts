@@ -13,7 +13,10 @@ import {
     setActiveYear,
     deleteAcademicYear,
     getAssignmentsByAcademicYear,
-    getCurrentYearAssignments
+    getCurrentYearAssignments,
+    getStudentsByClass,
+    getTeacherSchedule,
+    getMyResultsSummary
 } from '../controllers/teacherAssignmentController.js';
 
 const router = Router();
@@ -29,8 +32,11 @@ router.delete('/:id', authenticate, requireAdmin, deleteAssignment);
 // Admin & Teacher can view
 router.get('/', authenticate, getAllAssignments);
 
-// Teacher only
+// Teacher only routes
 router.get('/my-classes', authenticate, getTeacherClasses);
+router.get('/class/:classId/students', authenticate, getStudentsByClass);
+router.get('/schedule', authenticate, getTeacherSchedule);
+router.get('/my-results-summary', authenticate, getMyResultsSummary);
 
 // Assignment by academic year
 router.get('/academic-year/:academicYearId', authenticate, getAssignmentsByAcademicYear);

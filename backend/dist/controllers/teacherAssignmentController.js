@@ -251,11 +251,10 @@ export const getTeacherClasses = async (req, res) => {
         const classes = assignments.map(ta => ({
             classId: ta.classSubject.class.id,
             className: `${ta.classSubject.class.name} ${ta.classSubject.class.section}`,
-            subject: {
-                id: ta.classSubject.subject.id,
-                name: ta.classSubject.subject.name,
-                code: ta.classSubject.subject.code
-            },
+            displayName: `${ta.classSubject.class.name} ${ta.classSubject.class.section}`,
+            subjectId: ta.classSubject.subject.id,
+            subjectName: ta.classSubject.subject.name,
+            subjectCode: ta.classSubject.subject.code,
             isPrimary: ta.isPrimary
         }));
         return res.status(200).json({
@@ -276,24 +275,287 @@ export const getTeacherClasses = async (req, res) => {
     }
 };
 // ============================================
+// Get Students by Class (without attendance status)
+// ============================================
+export const getStudentsByClass = async (req, res) => {
+    try {
+        const { classId } = req.params;
+        const userId = req.user?.id;
+        const classIdNum = toInt(classId);
+        if (isNaN(classIdNum)) {
+            return res.status(400).json({ success: false, message: 'Invalid class ID' });
+        }
+        if (!userId) {
+            return res.status(401).json({ success: false, message: 'User not authenticated' });
+        }
+        const teacher = await prisma.teacher.findUnique({
+            where: { userId: userId }
+        });
+        if (!teacher) {
+            return res.status(404).json({ success: false, message: 'Teacher not found' });
+        }
+        const assignment = await prisma.teacherAssignment.findFirst({
+            where: {
+                teacherId: teacher.id,
+                classSubject: { classId: classIdNum }
+            },
+            include: {
+                classSubject: {
+                    include: {
+                        class: true
+                    }
+                }
+            }
+        });
+        if (!assignment) {
+            return res.status(403).json({
+                success: false,
+                message: 'You are not assigned to this class'
+            });
+        }
+        const students = await prisma.student.findMany({
+            where: {
+                classId: classIdNum,
+                isActive: true
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        phone: true
+                    }
+                }
+            },
+            orderBy: { rollNumber: 'asc' }
+        });
+        const formattedStudents = students.map(s => ({
+            id: s.id,
+            rollNumber: s.rollNumber,
+            name: s.user.name,
+            email: s.user.email,
+            phone: s.user.phone,
+            parentPhone: s.parentPhone,
+            admissionDate: s.admissionDate
+        }));
+        const className = assignment.classSubject.class ?
+            `${assignment.classSubject.class.name} ${assignment.classSubject.class.section}` :
+            'Unknown Class';
+        res.json({
+            success: true,
+            data: {
+                classId: classIdNum,
+                className: className,
+                students: formattedStudents,
+                count: formattedStudents.length
+            }
+        });
+    }
+    catch (error) {
+        console.error('Get students by class error:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+// ============================================
+// Get Teacher Schedule/Timetable
+// ============================================
+export const getTeacherSchedule = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.status(401).json({ success: false, message: 'User not authenticated' });
+        }
+        const teacher = await prisma.teacher.findUnique({
+            where: { userId: userId },
+            include: { user: true }
+        });
+        if (!teacher) {
+            return res.status(404).json({ success: false, message: 'Teacher not found' });
+        }
+        const activeYear = await prisma.academicYear.findFirst({
+            where: { isActive: true }
+        });
+        if (!activeYear) {
+            return res.status(404).json({ success: false, message: 'No active academic year found' });
+        }
+        const assignments = await prisma.teacherAssignment.findMany({
+            where: {
+                teacherId: teacher.id,
+                academicYearId: activeYear.id
+            },
+            include: {
+                classSubject: {
+                    include: {
+                        class: true,
+                        subject: true
+                    }
+                }
+            }
+        });
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+        const timeSlots = [
+            { time: '08:00 AM - 09:00 AM', slot: 1 },
+            { time: '09:00 AM - 10:00 AM', slot: 2 },
+            { time: '10:00 AM - 11:00 AM', slot: 3 },
+            { time: '11:00 AM - 12:00 PM', slot: 4 },
+            { time: '12:00 PM - 01:00 PM', slot: 5 },
+            { time: '02:00 PM - 03:00 PM', slot: 6 },
+            { time: '03:00 PM - 04:00 PM', slot: 7 }
+        ];
+        const schedule = days.map((day, dayIndex) => {
+            const daySchedule = timeSlots.map((timeSlot, slotIndex) => {
+                const assignmentIndex = (dayIndex * timeSlots.length + slotIndex) % assignments.length;
+                const assignment = assignments[assignmentIndex];
+                if (assignment && assignmentIndex < assignments.length) {
+                    return {
+                        time: timeSlot.time,
+                        classId: assignment.classSubject.class.id,
+                        className: `${assignment.classSubject.class.name} ${assignment.classSubject.class.section}`,
+                        subjectId: assignment.classSubject.subject.id,
+                        subjectName: assignment.classSubject.subject.name,
+                        subjectCode: assignment.classSubject.subject.code,
+                        room: `Room ${100 + assignment.classSubject.class.id}`,
+                        isPrimary: assignment.isPrimary
+                    };
+                }
+                return null;
+            }).filter(Boolean);
+            return {
+                day,
+                classes: daySchedule
+            };
+        });
+        res.json({
+            success: true,
+            data: {
+                teacherId: teacher.id,
+                teacherName: teacher.user?.name || 'Teacher',
+                academicYear: activeYear.year,
+                schedule
+            }
+        });
+    }
+    catch (error) {
+        console.error('Get teacher schedule error:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+// ============================================
+// Get Teacher's All Exam Results Summary
+// ============================================
+export const getMyResultsSummary = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        const { academicYearId } = req.query;
+        if (!userId) {
+            return res.status(401).json({ success: false, message: 'User not authenticated' });
+        }
+        const teacher = await prisma.teacher.findUnique({
+            where: { userId: userId },
+            include: { user: true }
+        });
+        if (!teacher) {
+            return res.status(404).json({ success: false, message: 'Teacher not found' });
+        }
+        const assignments = await prisma.teacherAssignment.findMany({
+            where: {
+                teacherId: teacher.id,
+                ...(academicYearId ? { academicYearId: parseInt(academicYearId) } : {})
+            },
+            include: {
+                classSubject: {
+                    include: {
+                        class: true,
+                        subject: true
+                    }
+                },
+                academicYear: true
+            }
+        });
+        const resultsSummary = [];
+        for (const assignment of assignments) {
+            const exams = await prisma.exam.findMany({
+                where: {
+                    classId: assignment.classSubject.class.id,
+                    subjectId: assignment.classSubject.subject.id,
+                    ...(academicYearId ? { academicYearId: parseInt(academicYearId) } : {})
+                },
+                include: {
+                    examType: true,
+                    results: {
+                        include: {
+                            student: {
+                                include: {
+                                    user: true
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            for (const exam of exams) {
+                const totalStudents = exam.results.length;
+                const passedStudents = exam.results.filter(r => Number(r.marksObtained) >= exam.passingMarks).length;
+                const averageMarks = exam.results.length > 0
+                    ? exam.results.reduce((sum, r) => sum + Number(r.marksObtained), 0) / exam.results.length
+                    : 0;
+                const highestMarks = exam.results.length > 0
+                    ? Math.max(...exam.results.map(r => Number(r.marksObtained)))
+                    : 0;
+                const lowestMarks = exam.results.length > 0
+                    ? Math.min(...exam.results.map(r => Number(r.marksObtained)))
+                    : 0;
+                resultsSummary.push({
+                    examId: exam.id,
+                    examName: exam.name,
+                    examType: exam.examType.name,
+                    examDate: exam.examDate,
+                    className: `${assignment.classSubject.class.name} ${assignment.classSubject.class.section}`,
+                    subjectName: assignment.classSubject.subject.name,
+                    maxMarks: exam.maxMarks,
+                    passingMarks: exam.passingMarks,
+                    isLocked: exam.isLocked,
+                    statistics: {
+                        totalStudents,
+                        passedStudents,
+                        failedStudents: totalStudents - passedStudents,
+                        passPercentage: totalStudents > 0 ? ((passedStudents / totalStudents) * 100).toFixed(2) : 0,
+                        averageMarks: averageMarks.toFixed(2),
+                        highestMarks,
+                        lowestMarks
+                    }
+                });
+            }
+        }
+        resultsSummary.sort((a, b) => new Date(b.examDate).getTime() - new Date(a.examDate).getTime());
+        res.json({
+            success: true,
+            data: {
+                teacherId: teacher.id,
+                teacherName: teacher.user?.name || 'Teacher',
+                totalExams: resultsSummary.length,
+                results: resultsSummary
+            }
+        });
+    }
+    catch (error) {
+        console.error('Get my results summary error:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
 // ============================================
 // ACADEMIC YEAR CRUD OPERATIONS
-// ============================================
-// ============================================
-// ============================================
-// ADMIN/SUPERADMIN ONLY - Create Academic Year
 // ============================================
 export const createAcademicYear = async (req, res) => {
     try {
         const { year, startDate, endDate, isActive } = req.body;
-        // Validation
         if (!year || !startDate || !endDate) {
             return res.status(400).json({
                 success: false,
                 message: 'year, startDate, and endDate are required'
             });
         }
-        // Check if year already exists
         const existing = await prisma.academicYear.findUnique({
             where: { year }
         });
@@ -303,7 +565,6 @@ export const createAcademicYear = async (req, res) => {
                 message: `Academic year ${year} already exists`
             });
         }
-        // If this year is set as active, deactivate all other years
         if (isActive === true) {
             await prisma.academicYear.updateMany({
                 where: { isActive: true },
@@ -333,9 +594,6 @@ export const createAcademicYear = async (req, res) => {
         });
     }
 };
-// ============================================
-// ADMIN/SUPERADMIN/TEACHER - Get All Academic Years
-// ============================================
 export const getAllAcademicYears = async (req, res) => {
     try {
         const academicYears = await prisma.academicYear.findMany({
@@ -355,9 +613,6 @@ export const getAllAcademicYears = async (req, res) => {
         });
     }
 };
-// ============================================
-// Get Active Academic Year
-// ============================================
 export const getActiveAcademicYear = async (req, res) => {
     try {
         const activeYear = await prisma.academicYear.findFirst({
@@ -382,9 +637,6 @@ export const getActiveAcademicYear = async (req, res) => {
         });
     }
 };
-// ============================================
-// Get Academic Year by ID
-// ============================================
 export const getAcademicYearById = async (req, res) => {
     try {
         const id = toInt(req.params.id);
@@ -435,9 +687,6 @@ export const getAcademicYearById = async (req, res) => {
         });
     }
 };
-// ============================================
-// ADMIN/SUPERADMIN ONLY - Update Academic Year
-// ============================================
 export const updateAcademicYear = async (req, res) => {
     try {
         const id = toInt(req.params.id);
@@ -448,7 +697,6 @@ export const updateAcademicYear = async (req, res) => {
                 message: 'Invalid academic year ID'
             });
         }
-        // Check if academic year exists
         const existingYear = await prisma.academicYear.findUnique({
             where: { id }
         });
@@ -458,7 +706,6 @@ export const updateAcademicYear = async (req, res) => {
                 message: 'Academic year not found'
             });
         }
-        // If updating year, check for duplicate
         if (year && year !== existingYear.year) {
             const duplicate = await prisma.academicYear.findUnique({
                 where: { year }
@@ -470,7 +717,6 @@ export const updateAcademicYear = async (req, res) => {
                 });
             }
         }
-        // If setting this year as active, deactivate all others
         if (isActive === true) {
             await prisma.academicYear.updateMany({
                 where: {
@@ -504,9 +750,6 @@ export const updateAcademicYear = async (req, res) => {
         });
     }
 };
-// ============================================
-// ADMIN/SUPERADMIN ONLY - Set Active Year
-// ============================================
 export const setActiveYear = async (req, res) => {
     try {
         const id = toInt(req.params.id);
@@ -516,7 +759,6 @@ export const setActiveYear = async (req, res) => {
                 message: 'Invalid academic year ID'
             });
         }
-        // Check if academic year exists
         const year = await prisma.academicYear.findUnique({
             where: { id }
         });
@@ -526,12 +768,10 @@ export const setActiveYear = async (req, res) => {
                 message: 'Academic year not found'
             });
         }
-        // Deactivate all years
         await prisma.academicYear.updateMany({
             where: { isActive: true },
             data: { isActive: false }
         });
-        // Activate this year
         const activeYear = await prisma.academicYear.update({
             where: { id },
             data: { isActive: true }
@@ -550,9 +790,6 @@ export const setActiveYear = async (req, res) => {
         });
     }
 };
-// ============================================
-// ADMIN/SUPERADMIN ONLY - Delete Academic Year
-// ============================================
 export const deleteAcademicYear = async (req, res) => {
     try {
         const id = toInt(req.params.id);
@@ -562,7 +799,6 @@ export const deleteAcademicYear = async (req, res) => {
                 message: 'Invalid academic year ID'
             });
         }
-        // Check if academic year exists
         const year = await prisma.academicYear.findUnique({
             where: { id },
             include: {
@@ -575,7 +811,6 @@ export const deleteAcademicYear = async (req, res) => {
                 message: 'Academic year not found'
             });
         }
-        // Check if it has teacher assignments
         if (year.teacherAssignments.length > 0) {
             return res.status(400).json({
                 success: false,
@@ -598,9 +833,6 @@ export const deleteAcademicYear = async (req, res) => {
         });
     }
 };
-// ============================================
-// Get Assignments by Academic Year
-// ============================================
 export const getAssignmentsByAcademicYear = async (req, res) => {
     try {
         const academicYearId = toInt(req.params.academicYearId);
@@ -611,7 +843,6 @@ export const getAssignmentsByAcademicYear = async (req, res) => {
                 message: 'Invalid academic year ID'
             });
         }
-        // Check if academic year exists
         const academicYear = await prisma.academicYear.findUnique({
             where: { id: academicYearId }
         });
@@ -689,13 +920,9 @@ export const getAssignmentsByAcademicYear = async (req, res) => {
         });
     }
 };
-// ============================================
-// Get Current Year Assignments
-// ============================================
 export const getCurrentYearAssignments = async (req, res) => {
     try {
         const user = req.user;
-        // Get active academic year
         const activeYear = await prisma.academicYear.findFirst({
             where: { isActive: true }
         });

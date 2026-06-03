@@ -22,7 +22,7 @@ import AdminAttendanceReports from './pages/admin/AttendenceReports';
 import AdminResults from './pages/admin/Results';
 import AdminReportCards from './pages/admin/ReportCards';
 import AdminHolidays from './pages/admin/Holidays';
-
+import AdminAcademicYears from './pages/admin/AcademicYears';
 import AdminExams from './pages/admin/Exams';
 
 
@@ -144,7 +144,7 @@ const AppRoutes: React.FC = () => {
     </ProtectedRoute>
   }
 />
-        
+
         {/* Admin Routes */}
         <Route
           path="/admin/students"
@@ -168,6 +168,14 @@ const AppRoutes: React.FC = () => {
   element={
     <ProtectedRoute>
       <AdminResults />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/admin/academic-years"
+  element={
+    <ProtectedRoute>
+      <AdminAcademicYears />
     </ProtectedRoute>
   }
 />

@@ -311,14 +311,7 @@ export const getTeacherClasses = async (req: AuthenticatedRequest, res: Response
     }
 };
 
-// ============================================
-// ============================================
-// ACADEMIC YEAR CRUD OPERATIONS
-// ============================================
-// ============================================
 
-// ============================================
-// ADMIN/SUPERADMIN ONLY - Create Academic Year
 // ============================================
 export const createAcademicYear = async (req: AuthenticatedRequest, res: Response) => {
     try {

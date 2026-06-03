@@ -53,10 +53,10 @@ const Sidebar: React.FC = () => {
     { path: '/admin/exams', label: 'Exams', icon: FileText },
     { path: '/admin/results', label: 'Results', icon: Award },
     { path: '/admin/report-cards', label: 'Report Cards', icon: Download },
-    { path: '/admin/fees', label: 'Fees', icon: CreditCard },
+  
     { path: '/admin/holidays', label: 'Holidays', icon: Gift },
     { path: '/admin/academic-years', label: 'Academic Years', icon: GraduationCap },
-    { path: '/admin/reports', label: 'Reports', icon: BarChart3 },
+    
     { path: '/admin/settings', label: 'Settings', icon: Settings },
   ];
 

@@ -72,6 +72,7 @@ const Sidebar: React.FC = () => {
         { path: '/my-students', label: 'My Students', icon: Users },
             { path: '/schedule', label: 'Schedule', icon: Clock },
     { path: '/my-results', label: 'My Results', icon: TrendingUp },
+    { path: '/attendance-reports', label: 'Attendance Reports', icon: TrendingUp },
 
 
 

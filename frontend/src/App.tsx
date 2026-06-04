@@ -32,6 +32,7 @@ import TeacherEnterMarks from './pages/teacher/EnterMarks';
 import TeacherMyStudents from './pages/teacher/MyStudents';
 import TeacherSchedule from './pages/teacher/Schedule';
 import TeacherMyResults from './pages/teacher/MyResults';
+import TeacherAttendanceReports from './pages/teacher/AttendanceReports';
 
 const RoleBasedDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -108,6 +109,14 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+  path="/attendance-reports"
+  element={
+    <ProtectedRoute>
+      <TeacherAttendanceReports />
+    </ProtectedRoute>
+  }
+/>
         <Route
           path="/students"
           element={

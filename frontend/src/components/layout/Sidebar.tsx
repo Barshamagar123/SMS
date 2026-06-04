@@ -67,12 +67,11 @@ const Sidebar: React.FC = () => {
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/my-classes', label: 'My Classes', icon: BookOpen },
     { path: '/mark-attendance', label: 'Mark Attendance', icon: Calendar },
+        { path: '/attendance-reports', label: 'Attendance Reports', icon: TrendingUp },
+
     { path: '/enter-marks', label: 'Enter Marks', icon: FileText },
     { path: '/profile', label: 'Profile', icon: UserCircle },
-        { path: '/my-students', label: 'My Students', icon: Users },
             { path: '/schedule', label: 'Schedule', icon: Clock },
-    { path: '/my-results', label: 'My Results', icon: TrendingUp },
-    { path: '/attendance-reports', label: 'Attendance Reports', icon: TrendingUp },
 
 
 

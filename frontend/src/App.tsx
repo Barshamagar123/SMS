@@ -29,9 +29,9 @@ import TeacherProfile from './pages/teacher/Profile';
 import TeacherMyClasses from './pages/teacher/MyClasses';
 import TeacherMarkAttendance from './pages/teacher/MarkAttendence';
 import TeacherEnterMarks from './pages/teacher/EnterMarks';
-import TeacherMyStudents from './pages/teacher/MyStudents';
+
 import TeacherSchedule from './pages/teacher/Schedule';
-import TeacherMyResults from './pages/teacher/MyResults';
+
 import TeacherAttendanceReports from './pages/teacher/AttendanceReports';
 
 const RoleBasedDashboard: React.FC = () => {
@@ -275,14 +275,8 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/my-students"
-          element={
-            <ProtectedRoute>
-              <TeacherMyStudents />
-            </ProtectedRoute>
-          }
-        />
+       
+      
         <Route
           path="/schedule"
           element={
@@ -291,14 +285,7 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/my-results"
-          element={
-            <ProtectedRoute>
-              <TeacherMyResults />
-            </ProtectedRoute>
-          }
-        />
+     
       </Route>
       
       {/* Root Redirect */}

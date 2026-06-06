@@ -21,8 +21,37 @@ const Login: React.FC = () => {
     try {
       const response = await authApi.login(email, password);
       const { user, accessToken, refreshToken } = response.data.data;
+      
+      console.log('Login successful. User role:', user.role);
+      
       login(user, accessToken, refreshToken);
-      navigate('/dashboard');
+      
+      // Role-based redirect
+      let redirectPath = '/dashboard'; // default fallback
+      
+      switch (user.role) {
+        case 'SUPERADMIN':
+          redirectPath = '/superadmin/dashboard';
+          break;
+        case 'ADMIN':
+          redirectPath = '/admin/dashboard';
+          break;
+        case 'TEACHER':
+          redirectPath = '/teacher/dashboard';
+          break;
+        case 'STUDENT':
+          redirectPath = '/student/dashboard';
+          break;
+        case 'PARENT':
+          redirectPath = '/parent/dashboard';
+          break;
+        default:
+          redirectPath = '/dashboard';
+      }
+      
+      console.log('Redirecting to:', redirectPath);
+      navigate(redirectPath, { replace: true });
+      
     } catch (err: any) {
       setError(err.response?.data?.message || 'Invalid email or password');
     } finally {

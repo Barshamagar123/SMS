@@ -31,7 +31,7 @@ const Sidebar: React.FC = () => {
 
   // SuperAdmin Menu
   const superAdminMenu = [
-    { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/superadmin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/admins', label: 'Admins', icon: Shield },
     { path: '/students', label: 'Students', icon: Users },
     { path: '/teachers', label: 'Teachers', icon: UserCircle },
@@ -79,10 +79,13 @@ const Sidebar: React.FC = () => {
 
   // Student Menu
   const studentMenu = [
-    { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/student/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/my-attendance', label: 'My Attendance', icon: Calendar },
     { path: '/my-results', label: 'My Results', icon: FileText },
-    { path: '/profile', label: 'Profile', icon: UserCircle },
+    { path: '/student-profile', label: 'Profile', icon: UserCircle },
+        { path: '/report-card', label: 'Report Card', icon: UserCircle },
+
+
   ];
 
   // Parent Menu

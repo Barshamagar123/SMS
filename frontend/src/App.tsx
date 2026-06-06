@@ -17,6 +17,7 @@ import AdminSubjects from './pages/admin/Subjects';
 import AdminTeacherAssignments from './pages/admin/TeachersAssignments';
 
 import StudentDashboard from './pages/student/Dashboard';
+import MyAttendance from './pages/student/MyAttendence';
 import ParentDashboard from './pages/parent/Dashboard';
 import AdminAttendanceReports from './pages/admin/AttendenceReports';
 import AdminResults from './pages/admin/Results';
@@ -29,31 +30,12 @@ import TeacherProfile from './pages/teacher/Profile';
 import TeacherMyClasses from './pages/teacher/MyClasses';
 import TeacherMarkAttendance from './pages/teacher/MarkAttendence';
 import TeacherEnterMarks from './pages/teacher/EnterMarks';
-
 import TeacherSchedule from './pages/teacher/Schedule';
-
 import TeacherAttendanceReports from './pages/teacher/AttendanceReports';
-
-const RoleBasedDashboard: React.FC = () => {
-  const { user } = useAuth();
-  
-  if (!user) return <Navigate to="/login" replace />;
-  
-  switch (user.role) {
-    case 'SUPERADMIN': 
-      return <Navigate to="/superadmin/dashboard" replace />;
-    case 'ADMIN': 
-      return <Navigate to="/admin/dashboard" replace />;
-    case 'TEACHER': 
-      return <Navigate to="/dashboard" replace />;
-    case 'STUDENT': 
-      return <StudentDashboard />;
-    case 'PARENT': 
-      return <ParentDashboard />;
-    default: 
-      return <AdminDashboard />;
-  }
-};
+import MyResults from './pages/student/MyResults';
+import MyProfile from './pages/student/MyProfile';
+import ReportCard from './pages/student/ReportCard';
+// import ReportCard from './pages/student/ReportCard';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -69,14 +51,37 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return user ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
-const AppRoutes: React.FC = () => {
+// Component to handle role-based redirect
+const RoleBasedRedirect: React.FC = () => {
   const { user } = useAuth();
   
+  if (!user) return <Navigate to="/login" replace />;
+  
+  switch (user.role) {
+    case 'SUPERADMIN':
+      return <Navigate to="/superadmin/dashboard" replace />;
+    case 'ADMIN':
+      return <Navigate to="/admin/dashboard" replace />;
+    case 'TEACHER':
+      return <Navigate to="/dashboard" replace />;
+    case 'STUDENT':
+      return <Navigate to="/student/dashboard" replace />;
+    case 'PARENT':
+      return <Navigate to="/parent/dashboard" replace />;
+    default:
+      return <Navigate to="/login" replace />;
+  }
+};
+
+const AppRoutes: React.FC = () => {
   return (
     <Routes>
       {/* Public Routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
+      
+      {/* Root Redirect - Based on Role */}
+      <Route path="/" element={<RoleBasedRedirect />} />
       
       {/* Protected Routes with Layout */}
       <Route element={<Layout />}>
@@ -100,6 +105,16 @@ const AppRoutes: React.FC = () => {
           }
         />
         
+        {/* Teacher Dashboard */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <TeacherDashboard />
+            </ProtectedRoute>
+          }
+        />
+        
         {/* SuperAdmin Routes */}
         <Route
           path="/admins"
@@ -110,13 +125,13 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
-  path="/attendance-reports"
-  element={
-    <ProtectedRoute>
-      <TeacherAttendanceReports />
-    </ProtectedRoute>
-  }
-/>
+          path="/attendance-reports"
+          element={
+            <ProtectedRoute>
+              <TeacherAttendanceReports />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/students"
           element={
@@ -142,14 +157,6 @@ const AppRoutes: React.FC = () => {
               <AdminStudents />
             </ProtectedRoute>
           }
-        />
-        <Route
-        path="/dashboard"
-        element={
-<ProtectedRoute>
-  <TeacherDashboard />
-</ProtectedRoute>
-        }
         />
         <Route
           path="/admin/teachers"
@@ -232,16 +239,6 @@ const AppRoutes: React.FC = () => {
           }
         />
         
-        {/* Teacher Routes - Dashboard Redirect */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <RoleBasedDashboard />
-            </ProtectedRoute>
-          }
-        />
-        
         {/* Teacher Routes */}
         <Route
           path="/profile"
@@ -259,6 +256,12 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
+         <Route 
+         path="/my-attendance" 
+         element={<ProtectedRoute>
+          <MyAttendance />
+
+          </ProtectedRoute>} />
         <Route
           path="/mark-attendance"
           element={
@@ -275,8 +278,6 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
-       
-      
         <Route
           path="/schedule"
           element={
@@ -285,11 +286,50 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
-     
+        
+        {/* Student Dashboard - INSIDE Layout (with sidebar) */}
+        <Route
+          path="/student/dashboard"
+          element={
+            <ProtectedRoute>
+              <StudentDashboard />
+            </ProtectedRoute>
+          }
+        />
+          <Route
+          path="/my-results"
+          element={
+            <ProtectedRoute>
+              <MyResults />
+            </ProtectedRoute>
+          }
+        />
+            <Route
+          path="/report-card"
+          element={
+            <ProtectedRoute>
+              <ReportCard />
+            </ProtectedRoute>
+          }
+        />
+          <Route
+          path="/student-profile"
+          element={
+            <ProtectedRoute>
+              <MyProfile />
+            </ProtectedRoute>
+          }
+        />
+        {/* Parent Dashboard - INSIDE Layout (with sidebar) */}
+        <Route
+          path="/parent/dashboard"
+          element={
+            <ProtectedRoute>
+              <ParentDashboard />
+            </ProtectedRoute>
+          }
+        />
       </Route>
-      
-      {/* Root Redirect */}
-      <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} replace />} />
     </Routes>
   );
 };

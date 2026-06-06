@@ -70,9 +70,10 @@ const Sidebar: React.FC = () => {
         { path: '/attendance-reports', label: 'Attendance Reports', icon: TrendingUp },
 
     { path: '/enter-marks', label: 'Enter Marks', icon: FileText },
+
+{ path: '/teacher/assignments', label: 'Assignments', icon: BookOpen }, 
     { path: '/profile', label: 'Profile', icon: UserCircle },
             { path: '/schedule', label: 'Schedule', icon: Clock },
-
 
 
   ];
@@ -85,7 +86,8 @@ const Sidebar: React.FC = () => {
     { path: '/student-profile', label: 'Profile', icon: UserCircle },
         { path: '/report-card', label: 'Report Card', icon: UserCircle },
 
-
+  { path: '/student/assignments', label: 'Assignments', icon: BookOpen },  // ✅ ADD THIS
+  { path: '/notifications', label: 'Notifications', icon: Bell },  
   ];
 
   // Parent Menu

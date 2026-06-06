@@ -37,7 +37,7 @@ const Login: React.FC = () => {
           redirectPath = '/admin/dashboard';
           break;
         case 'TEACHER':
-          redirectPath = '/teacher/dashboard';
+          redirectPath = '/dashboard';
           break;
         case 'STUDENT':
           redirectPath = '/student/dashboard';

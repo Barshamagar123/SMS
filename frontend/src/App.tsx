@@ -35,8 +35,13 @@ import TeacherAttendanceReports from './pages/teacher/AttendanceReports';
 import MyResults from './pages/student/MyResults';
 import MyProfile from './pages/student/MyProfile';
 import ReportCard from './pages/student/ReportCard';
+import MyAssignments from './pages/student/MyAssignments';
+import AssignmentDetail from './pages/student/AssignmentDetail';
+import Notifications from './pages/Notifications';
 // import ReportCard from './pages/student/ReportCard';
-
+import TeacherAssignments from './pages/teacher/TeacherAssignments';
+import CreateAssignment from './pages/teacher/CreateAssignment';
+import SubmissionsList from './pages/teacher/SubmissionsList';
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
   
@@ -148,7 +153,10 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
-        
+        <Route path="/teacher/assignments" element={<TeacherAssignments />} />
+<Route path="/teacher/assignments/create" element={<CreateAssignment />} />
+<Route path="/teacher/assignments/:assignmentId/submissions" element={<SubmissionsList />} />
+<Route path="/teacher/assignments/:assignmentId/edit" element={<CreateAssignment />} />
         {/* Admin Routes */}
         <Route
           path="/admin/students"
@@ -312,6 +320,9 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        <Route path="/student/assignments" element={<MyAssignments />} />
+<Route path="/student/assignments/:id" element={<AssignmentDetail />} />
+<Route path="/notifications" element={<Notifications />} />
           <Route
           path="/student-profile"
           element={

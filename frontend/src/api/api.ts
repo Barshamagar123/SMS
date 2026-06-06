@@ -1,4 +1,4 @@
-// src/services/api.ts (or src/api/api.ts - wherever your existing api.ts is)
+// src/services/api.ts (or src/api/api.ts)
 
 import * as axios from 'axios';
 const axiosClient = (axios as any).default || axios;
@@ -86,6 +86,51 @@ export const authApi = {
   resetStudentPassword: (studentId: number) => api.post(`/auth/students/${studentId}/reset-password`),
 };
 
+// ==================== ASSIGNMENT API (NEW) ====================
+export const assignmentApi = {
+  // Student
+  getMyAssignments: () => api.get('/assignments/my-assignments'),
+  getAssignmentById: (id: number) => api.get(`/assignments/${id}`),
+  submitAssignment: (assignmentId: number, files: File[], comment?: string) => {
+    const formData = new FormData();
+    files.forEach(file => formData.append('files', file));
+    if (comment) formData.append('comment', comment);
+    return api.post(`/assignments/submit/${assignmentId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  
+  // Teacher
+  getTeacherAssignments: () => api.get('/assignments/teacher/assignments'),
+  createAssignment: (data: any, files: File[]) => {
+    const formData = new FormData();
+    Object.keys(data).forEach(key => formData.append(key, data[key]));
+    files.forEach(file => formData.append('files', file));
+    return api.post('/assignments', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  updateAssignment: (id: number, data: any) => api.put(`/assignments/${id}`, data),
+  deleteAssignment: (id: number) => api.delete(`/assignments/${id}`),
+  gradeSubmission: (submissionId: number, marksObtained: number, feedback?: string) => 
+    api.post(`/assignments/grade/${submissionId}`, { marksObtained, feedback }),
+  
+  // Download
+  downloadFile: (type: 'assignment' | 'submission', fileId: number) => 
+    api.get(`/assignments/download/${type}/${fileId}`, { responseType: 'blob' })
+};
+
+// ==================== NOTIFICATION API (NEW) ====================
+export const notificationApi = {
+  getNotifications: (page: number = 1, limit: number = 20) => 
+    api.get(`/notifications?page=${page}&limit=${limit}`),
+  getUnreadCount: () => api.get('/notifications/unread-count'),
+  markAsRead: (id: number) => api.put(`/notifications/${id}/read`),
+  markAllAsRead: () => api.put('/notifications/read-all'),
+  deleteNotification: (id: number) => api.delete(`/notifications/${id}`),
+  deleteAllNotifications: () => api.delete('/notifications')
+};
+
 // ==================== STUDENT API (Student Dashboard) ====================
 export const studentApi = {
   // Dashboard
@@ -149,7 +194,7 @@ export const studentApi = {
   getHolidays: () => api.get('/student/calendar/holidays'),
   getExamSchedule: () => api.get('/student/calendar/exams'),
   
-  // Notifications
+  // Notifications (deprecated - use notificationApi instead)
   getNotifications: () => api.get('/student/notifications'),
   markNotificationRead: (id: number) => api.post(`/student/notifications/${id}/read`),
   markAllRead: () => api.post('/student/notifications/mark-all-read'),

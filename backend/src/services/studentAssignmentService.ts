@@ -33,6 +33,7 @@ export class StudentAssignmentService {
         dueDate: data.dueDate,
         totalMarks: data.totalMarks,
         passingMarks: data.passingMarks,
+        isActive: true  // ✅ Ensure assignment is active
       }
     });
 
@@ -74,6 +75,8 @@ export class StudentAssignmentService {
     
     if (!student) throw new Error('Student not found');
 
+    console.log(`📚 Fetching assignments for Student ID: ${studentId}, Class ID: ${student.classId}`);
+
     const assignments = await prisma.assignment.findMany({
       where: { 
         classId: student.classId, 
@@ -85,7 +88,12 @@ export class StudentAssignmentService {
         attachments: true,
         submissions: { where: { studentId } }
       },
-      orderBy: { dueDate: 'asc' }
+      orderBy: { createdAt: 'desc' }  // ✅ Show newest first
+    });
+
+    console.log(`✅ Found ${assignments.length} assignments for class ${student.classId}`);
+    assignments.forEach(a => {
+      console.log(`   - ${a.title} (Subject: ${a.subject?.name}, ID: ${a.subjectId})`);
     });
 
     return assignments.map(assignment => ({
@@ -107,20 +115,51 @@ export class StudentAssignmentService {
         subject: true,
         teacher: { include: { user: true } },
         attachments: true,
-        submissions: studentId ? { where: { studentId } } : false
+        submissions: studentId ? { 
+          where: { studentId },
+          include: {
+            student: { include: { user: true } },
+            attachments: true
+          }
+        } : {
+          include: {
+            student: { include: { user: true } },
+            attachments: true
+          }
+        }
       }
     });
     
     if (!assignment) throw new Error('Assignment not found');
     
+    const result: any = {
+      id: assignment.id,
+      title: assignment.title,
+      description: assignment.description,
+      classId: assignment.classId,
+      subjectId: assignment.subjectId,
+      teacherId: assignment.teacherId,
+      dueDate: assignment.dueDate,
+      totalMarks: assignment.totalMarks,
+      passingMarks: assignment.passingMarks,
+      createdAt: assignment.createdAt,
+      updatedAt: assignment.updatedAt,
+      isActive: assignment.isActive,
+      subject: assignment.subject,
+      teacher: assignment.teacher,
+      attachments: assignment.attachments,
+      submissions: assignment.submissions
+    };
+    
     if (studentId) {
-      return {
-        ...assignment,
-        status: this.getAssignmentStatus(assignment, assignment.submissions?.[0])
-      };
+      const studentSubmission = assignment.submissions.find(s => s.studentId === studentId);
+      result.status = studentSubmission ? 'SUBMITTED' : 'PENDING';
+      if (studentSubmission) {
+        result.submission = studentSubmission;
+      }
     }
     
-    return assignment;
+    return result;
   }
 
   static async submitAssignment(
@@ -270,7 +309,7 @@ export class StudentAssignmentService {
         },
         attachments: true
       },
-      orderBy: { dueDate: 'asc' }
+      orderBy: { createdAt: 'desc' }
     });
 
     return assignments;

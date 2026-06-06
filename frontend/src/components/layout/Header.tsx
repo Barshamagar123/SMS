@@ -1,14 +1,16 @@
+// src/components/layout/Header.tsx
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { Bell, User, ChevronDown, Settings, LogOut, Shield, School, Users, BookOpen } from 'lucide-react';
+import { User, ChevronDown, Settings, LogOut, Shield, School, Users, BookOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import NotificationBell from './NotificationBell.js';  // ✅ ADD THIS IMPORT
 
 const Header: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [notificationCount, setNotificationCount] = useState(3);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -82,13 +84,8 @@ const Header: React.FC = () => {
               <span className="text-xs font-medium capitalize">{user?.role}</span>
             </div>
 
-            {/* Notifications */}
-            <button className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-              <Bell size={20} />
-              {notificationCount > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              )}
-            </button>
+            {/* ✅ REPLACE static notification with NotificationBell */}
+            <NotificationBell />
 
             {/* User Dropdown */}
             <div className="relative">
@@ -107,7 +104,7 @@ const Header: React.FC = () => {
               </button>
 
               {showDropdown && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50 animate-fade-in">
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
                   <div className="px-4 py-3 border-b border-gray-100">
                     <p className="text-sm font-medium text-gray-800">{user?.name}</p>
                     <p className="text-xs text-gray-500">{user?.email}</p>

@@ -80,6 +80,7 @@ model Student {
   attendances        Attendance[]
   attendanceSummaries AttendanceSummary[]
       examResults        ExamResult[]
+  assignmentSubmissions AssignmentSubmission[]      // ← ADD THIS LINE (not assignments, but submissions)
 
   @@index([rollNumber])
   @@map("students")
@@ -98,6 +99,7 @@ model Teacher {
   phone           String?   @db.VarChar(20)
   address         String?   @db.Text
   hireDate        DateTime? @map("hire_date")
+  assignments     Assignment[]      // ← ADD THIS LINE
 
     // Status
   isActive        Boolean   @default(true) @map("is_active")
@@ -123,6 +125,7 @@ model Class {
     attendances      Attendance[]   
   @@unique([name, section])
     exams            Exam[]
+  assignments      Assignment[]      // ← ADD THIS LINE
 
 
   @@map("classes")
@@ -221,11 +224,19 @@ model Notification {
   title     String   @db.VarChar(255)
   message   String   @db.Text
   userId    Int      @map("user_id")
+    type      String   @default("GENERAL") @db.VarChar(50)  // Add default value
+
   isRead    Boolean  @default(false) @map("is_read")
   createdAt DateTime @default(now()) @map("created_at")
+ updatedAt DateTime @default(now()) @updatedAt @map("updated_at")  // ← Add @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  relatedId Int?     @map("related_id") // ADD THIS - ID of related entity (assignmentId, holidayId, etc.)
   @@index([userId])
+   @@index([createdAt])
+  @@index([type])
+    @@index([isRead])
+
+    @@index([relatedId])
   @@map("notifications")
 }
 // ============================================
@@ -240,7 +251,8 @@ model Subject {
   isActive    Boolean   @default(true)       @map("is_active")
   createdAt   DateTime  @default(now())      @map("created_at")
   updatedAt   DateTime  @updatedAt           @map("updated_at")
-  
+    assignments      Assignment[]      // ← ADD THIS LINE
+
   // Relationships
   classSubjects    ClassSubject[]
     exams            Exam[]
@@ -454,4 +466,85 @@ model GradeScale {
   createdAt     DateTime  @default(now()) @map("created_at")
   
   @@map("grade_scales")
+}
+// Add to your schema.prisma
+
+
+// ============================================
+// ASSIGNMENT MANAGEMENT MODELS
+// ============================================
+
+model Assignment {
+  id              Int                 @id @default(autoincrement())
+  title           String
+  description     String?
+  classId         Int
+  subjectId       Int
+  teacherId       Int
+  dueDate         DateTime
+  totalMarks      Int                 @default(100)
+  passingMarks    Int                 @default(40)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  isActive        Boolean             @default(true)
+
+  class           Class               @relation(fields: [classId], references: [id])
+  subject         Subject             @relation(fields: [subjectId], references: [id])
+  teacher         Teacher             @relation(fields: [teacherId], references: [id])
+  attachments     AssignmentAttachment[]
+  submissions     AssignmentSubmission[]
+
+  @@index([classId])
+  @@index([subjectId])
+  @@index([teacherId])
+  @@map("assignments")
+}
+
+model AssignmentAttachment {
+  id            Int         @id @default(autoincrement())
+  assignmentId  Int
+  fileName      String
+  fileUrl       String
+  fileSize      Int
+  fileType      String
+  uploadedAt    DateTime    @default(now())
+
+  assignment    Assignment  @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  
+  @@map("assignment_attachments")
+}
+
+model AssignmentSubmission {
+  id            Int                 @id @default(autoincrement())
+  assignmentId  Int
+  studentId     Int
+  submittedAt   DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  comment       String?
+  marksObtained Int?
+  grade         String?
+  feedback      String?
+  gradedBy      Int?
+  gradedAt      DateTime?
+
+  assignment    Assignment          @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student       Student             @relation(fields: [studentId], references: [id])
+  attachments   SubmissionAttachment[]
+
+  @@unique([assignmentId, studentId])
+  @@map("assignment_submissions")
+}
+
+model SubmissionAttachment {
+  id            Int                 @id @default(autoincrement())
+  submissionId  Int
+  fileName      String
+  fileUrl       String
+  fileSize      Int
+  fileType      String
+  uploadedAt    DateTime            @default(now())
+
+  submission    AssignmentSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  
+  @@map("submission_attachments")
 }

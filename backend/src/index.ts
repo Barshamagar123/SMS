@@ -25,7 +25,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { globalLimiter } from './middleware/rateLimitMiddleware.js';
 import { PrismaClient } from '@prisma/client';
 import { initializeSocket } from './config/socket.js';
-
+import chatRoutes from './routes/chatRoutes.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -112,7 +112,7 @@ app.use('/api/exams', examRoutes);
 app.use('/api/report-cards', reportCardRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/assignments', assignmentRoutes);
-
+app.use('/api/chat',chatRoutes);
 // Debug endpoint to check uploaded files
 app.get('/debug/uploads', (req, res) => {
   const studentsPath = path.join(uploadsPath, 'students');

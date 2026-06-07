@@ -1,4 +1,6 @@
+// backend/src/controllers/holidayController.ts
 import AttendanceService from '../services/attendanceService.js';
+import { NotificationService } from '../services/notificationService.js'; // ✅ ADD THIS IMPORT
 const toNumber = (val) => {
     if (!val)
         return NaN;
@@ -21,7 +23,7 @@ export const getHolidays = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
-// Add holiday (Admin only)
+// ✅ UPDATED: Add holiday with real-time notifications
 export const addHoliday = async (req, res) => {
     try {
         const { name, date, description } = req.body;
@@ -32,9 +34,15 @@ export const addHoliday = async (req, res) => {
             });
         }
         const holiday = await AttendanceService.addHoliday(name, date, description);
+        // ✅ SEND NOTIFICATION TO ALL STUDENTS
+        await NotificationService.sendToRole('STUDENT', '🏖️ Holiday Announcement', `School will remain closed on ${new Date(date).toLocaleDateString()} for ${name}.`, 'HOLIDAY', holiday.id);
+        // ✅ SEND NOTIFICATION TO ALL TEACHERS
+        await NotificationService.sendToRole('TEACHER', '🏖️ Holiday Announcement', `School will remain closed on ${new Date(date).toLocaleDateString()} for ${name}.`, 'HOLIDAY', holiday.id);
+        // ✅ ALSO NOTIFY ADMINS (optional)
+        await NotificationService.sendToRole('ADMIN', '🏖️ Holiday Added', `Holiday "${name}" has been added for ${new Date(date).toLocaleDateString()}.`, 'HOLIDAY', holiday.id);
         res.json({
             success: true,
-            message: 'Holiday added successfully',
+            message: 'Holiday added successfully with notifications',
             data: holiday
         });
     }

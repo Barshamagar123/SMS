@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { User, ChevronDown, Settings, LogOut, Shield, School, Users, BookOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import NotificationBell from './NotificationBell.js';  // ✅ ADD THIS IMPORT
+import NotificationBell from './NotificationBell';
 
 const Header: React.FC = () => {
   const { user, logout } = useAuth();
@@ -38,8 +38,9 @@ const Header: React.FC = () => {
     }
   };
 
-  const handleLogout = async () => {
-    await logout();
+  // ✅ FIXED: Removed async/await
+  const handleLogout = () => {
+    logout();
     navigate('/login');
   };
 
@@ -84,7 +85,6 @@ const Header: React.FC = () => {
               <span className="text-xs font-medium capitalize">{user?.role}</span>
             </div>
 
-            {/* ✅ REPLACE static notification with NotificationBell */}
             <NotificationBell />
 
             {/* User Dropdown */}

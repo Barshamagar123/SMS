@@ -1,14 +1,14 @@
 export declare class NotificationService {
     static sendToUser(userId: number, title: string, message: string, type: string, relatedId?: number): Promise<{
-        message: string;
-        title: string;
-        type: string;
-        isRead: boolean;
+        id: number;
         createdAt: Date;
         updatedAt: Date;
-        relatedId: number | null;
-        id: number;
+        message: string;
+        isRead: boolean;
         userId: number;
+        title: string;
+        type: string;
+        relatedId: number | null;
     }>;
     static sendToMany(userIds: number[], title: string, message: string, type: string, relatedId?: number): Promise<{
         userId: number;
@@ -33,29 +33,29 @@ export declare class NotificationService {
     }[]>;
     static getUserNotifications(userId: number, page?: number, limit?: number): Promise<{
         notifications: {
-            message: string;
-            title: string;
-            type: string;
-            isRead: boolean;
+            id: number;
             createdAt: Date;
             updatedAt: Date;
-            relatedId: number | null;
-            id: number;
+            message: string;
+            isRead: boolean;
             userId: number;
+            title: string;
+            type: string;
+            relatedId: number | null;
         }[];
         total: number;
         unreadCount: number;
     }>;
     static getNotificationById(notificationId: number, userId: number): Promise<{
-        message: string;
-        title: string;
-        type: string;
-        isRead: boolean;
+        id: number;
         createdAt: Date;
         updatedAt: Date;
-        relatedId: number | null;
-        id: number;
+        message: string;
+        isRead: boolean;
         userId: number;
+        title: string;
+        type: string;
+        relatedId: number | null;
     }>;
     static markAsRead(notificationId: number, userId: number): Promise<import("@prisma/client").Prisma.BatchPayload>;
     static markAllAsRead(userId: number): Promise<import("@prisma/client").Prisma.BatchPayload>;

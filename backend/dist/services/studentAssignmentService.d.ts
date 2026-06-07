@@ -10,40 +10,31 @@ export declare class StudentAssignmentService {
         passingMarks: number;
         files?: Express.Multer.File[];
     }): Promise<{
-        title: string;
-        description: string | null;
-        dueDate: Date;
-        totalMarks: number;
-        passingMarks: number;
+        id: number;
         createdAt: Date;
         updatedAt: Date;
         isActive: boolean;
-        id: number;
+        description: string | null;
         classId: number;
-        subjectId: number;
         teacherId: number;
+        subjectId: number;
+        title: string;
+        passingMarks: number;
+        dueDate: Date;
+        totalMarks: number;
     }>;
     static getStudentAssignments(studentId: number): Promise<{
         status: string;
-        subject: {
-            description: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            isActive: boolean;
-            id: number;
-            name: string;
-            code: string;
-        };
         teacher: {
             user: {
+                id: number;
                 createdAt: Date;
                 updatedAt: Date;
                 isActive: boolean;
-                id: number;
                 name: string;
-                phone: string | null;
                 email: string;
                 password: string;
+                phone: string | null;
                 role: import("@prisma/client").$Enums.RoleEnum;
                 status: import("@prisma/client").$Enums.UserStatus;
                 isFirstLogin: boolean;
@@ -52,78 +43,87 @@ export declare class StudentAssignmentService {
                 lastLoginAt: Date | null;
             };
         } & {
+            id: number;
             createdAt: Date;
             updatedAt: Date | null;
             isActive: boolean;
-            id: number;
+            phone: string | null;
             userId: number;
             address: string | null;
-            phone: string | null;
             profilePhoto: string | null;
             employeeId: string;
             qualification: string | null;
             specialization: string | null;
             hireDate: Date | null;
         };
+        subject: {
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            isActive: boolean;
+            name: string;
+            description: string | null;
+            code: string;
+        };
+        submissions: {
+            id: number;
+            updatedAt: Date;
+            studentId: number;
+            marksObtained: number | null;
+            grade: string | null;
+            assignmentId: number;
+            submittedAt: Date;
+            comment: string | null;
+            feedback: string | null;
+            gradedBy: number | null;
+            gradedAt: Date | null;
+        }[];
         attachments: {
             id: number;
-            assignmentId: number;
             fileName: string;
             fileUrl: string;
             fileSize: number;
             fileType: string;
             uploadedAt: Date;
-        }[];
-        submissions: {
-            updatedAt: Date;
-            id: number;
             assignmentId: number;
-            studentId: number;
-            submittedAt: Date;
-            comment: string | null;
-            marksObtained: number | null;
-            grade: string | null;
-            feedback: string | null;
-            gradedBy: number | null;
-            gradedAt: Date | null;
         }[];
-        title: string;
-        description: string | null;
-        dueDate: Date;
-        totalMarks: number;
-        passingMarks: number;
+        id: number;
         createdAt: Date;
         updatedAt: Date;
         isActive: boolean;
-        id: number;
+        description: string | null;
         classId: number;
-        subjectId: number;
         teacherId: number;
+        subjectId: number;
+        title: string;
+        passingMarks: number;
+        dueDate: Date;
+        totalMarks: number;
     }[]>;
     static getAssignmentStatus(assignment: any, submission: any): string;
     static getAssignmentById(assignmentId: number, studentId?: number): Promise<any>;
     static submitAssignment(assignmentId: number, studentId: number, files: Express.Multer.File[], comment?: string): Promise<{
-        updatedAt: Date;
         id: number;
-        assignmentId: number;
+        updatedAt: Date;
         studentId: number;
-        submittedAt: Date;
-        comment: string | null;
         marksObtained: number | null;
         grade: string | null;
+        assignmentId: number;
+        submittedAt: Date;
+        comment: string | null;
         feedback: string | null;
         gradedBy: number | null;
         gradedAt: Date | null;
     }>;
     static gradeSubmission(submissionId: number, marksObtained: number, feedback?: string, teacherId?: number): Promise<{
-        updatedAt: Date;
         id: number;
-        assignmentId: number;
+        updatedAt: Date;
         studentId: number;
-        submittedAt: Date;
-        comment: string | null;
         marksObtained: number | null;
         grade: string | null;
+        assignmentId: number;
+        submittedAt: Date;
+        comment: string | null;
         feedback: string | null;
         gradedBy: number | null;
         gradedAt: Date | null;
@@ -136,43 +136,25 @@ export declare class StudentAssignmentService {
             section: string;
         };
         subject: {
-            description: string | null;
+            id: number;
             createdAt: Date;
             updatedAt: Date;
             isActive: boolean;
-            id: number;
             name: string;
+            description: string | null;
             code: string;
         };
-        attachments: {
-            id: number;
-            assignmentId: number;
-            fileName: string;
-            fileUrl: string;
-            fileSize: number;
-            fileType: string;
-            uploadedAt: Date;
-        }[];
         submissions: ({
-            attachments: {
-                id: number;
-                fileName: string;
-                fileUrl: string;
-                fileSize: number;
-                fileType: string;
-                uploadedAt: Date;
-                submissionId: number;
-            }[];
             student: {
                 user: {
+                    id: number;
                     createdAt: Date;
                     updatedAt: Date;
                     isActive: boolean;
-                    id: number;
                     name: string;
-                    phone: string | null;
                     email: string;
                     password: string;
+                    phone: string | null;
                     role: import("@prisma/client").$Enums.RoleEnum;
                     status: import("@prisma/client").$Enums.UserStatus;
                     isFirstLogin: boolean;
@@ -181,13 +163,14 @@ export declare class StudentAssignmentService {
                     lastLoginAt: Date | null;
                 };
             } & {
+                id: number;
                 createdAt: Date;
                 updatedAt: Date | null;
                 isActive: boolean;
-                id: number;
-                classId: number;
+                phone: string | null;
                 rollNumber: string;
                 userId: number;
+                classId: number;
                 dateOfBirth: Date | null;
                 gender: import("@prisma/client").$Enums.Gender | null;
                 bloodGroup: string | null;
@@ -196,7 +179,6 @@ export declare class StudentAssignmentService {
                 address: string | null;
                 city: string | null;
                 state: string | null;
-                phone: string | null;
                 fatherName: string | null;
                 motherName: string | null;
                 parentPhone: string | null;
@@ -206,46 +188,64 @@ export declare class StudentAssignmentService {
                 previousClass: string | null;
                 profilePhoto: string | null;
             };
+            attachments: {
+                id: number;
+                fileName: string;
+                fileUrl: string;
+                fileSize: number;
+                fileType: string;
+                uploadedAt: Date;
+                submissionId: number;
+            }[];
         } & {
-            updatedAt: Date;
             id: number;
-            assignmentId: number;
+            updatedAt: Date;
             studentId: number;
-            submittedAt: Date;
-            comment: string | null;
             marksObtained: number | null;
             grade: string | null;
+            assignmentId: number;
+            submittedAt: Date;
+            comment: string | null;
             feedback: string | null;
             gradedBy: number | null;
             gradedAt: Date | null;
         })[];
+        attachments: {
+            id: number;
+            fileName: string;
+            fileUrl: string;
+            fileSize: number;
+            fileType: string;
+            uploadedAt: Date;
+            assignmentId: number;
+        }[];
     } & {
-        title: string;
-        description: string | null;
-        dueDate: Date;
-        totalMarks: number;
-        passingMarks: number;
+        id: number;
         createdAt: Date;
         updatedAt: Date;
         isActive: boolean;
-        id: number;
+        description: string | null;
         classId: number;
-        subjectId: number;
         teacherId: number;
+        subjectId: number;
+        title: string;
+        passingMarks: number;
+        dueDate: Date;
+        totalMarks: number;
     })[]>;
     static deleteAssignment(assignmentId: number, teacherId: number): Promise<{
-        title: string;
-        description: string | null;
-        dueDate: Date;
-        totalMarks: number;
-        passingMarks: number;
+        id: number;
         createdAt: Date;
         updatedAt: Date;
         isActive: boolean;
-        id: number;
+        description: string | null;
         classId: number;
-        subjectId: number;
         teacherId: number;
+        subjectId: number;
+        title: string;
+        passingMarks: number;
+        dueDate: Date;
+        totalMarks: number;
     }>;
     static updateAssignment(assignmentId: number, teacherId: number, data: {
         title?: string;
@@ -254,17 +254,17 @@ export declare class StudentAssignmentService {
         totalMarks?: number;
         passingMarks?: number;
     }): Promise<{
-        title: string;
-        description: string | null;
-        dueDate: Date;
-        totalMarks: number;
-        passingMarks: number;
+        id: number;
         createdAt: Date;
         updatedAt: Date;
         isActive: boolean;
-        id: number;
+        description: string | null;
         classId: number;
-        subjectId: number;
         teacherId: number;
+        subjectId: number;
+        title: string;
+        passingMarks: number;
+        dueDate: Date;
+        totalMarks: number;
     }>;
 }

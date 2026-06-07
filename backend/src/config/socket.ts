@@ -4,6 +4,7 @@ import { Server as SocketServer } from 'socket.io';
 import { Server as HttpServer } from 'http';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
+import ChatService from '../services/chatService.js';
 
 const prisma = new PrismaClient();
 let io: SocketServer | null = null;
@@ -62,7 +63,7 @@ export const initializeSocket = (server: HttpServer) => {
         }
       }
 
-      // Send unread count
+      // Send initial unread notification count
       try {
         const unreadCount = await prisma.notification.count({
           where: { userId, isRead: false }
@@ -72,13 +73,65 @@ export const initializeSocket = (server: HttpServer) => {
         console.error('Error fetching unread count:', error);
       }
 
+      // ==================== CHAT EVENTS ====================
+      
+      // Handle typing indicator
+      socket.on('typing', async ({ receiverId, isTyping }) => {
+        socket.to(`user:${receiverId}`).emit('user-typing', {
+          userId,
+          isTyping
+        });
+      });
+      
+      // Handle stop typing
+      socket.on('stop-typing', async ({ receiverId }) => {
+        socket.to(`user:${receiverId}`).emit('user-stop-typing', {
+          userId
+        });
+      });
+      
+      // Handle message read receipt
+      socket.on('mark-read', async ({ messageId, senderId }) => {
+        try {
+          await ChatService.markAsRead(messageId, userId);
+          socket.to(`user:${senderId}`).emit('message-read', { 
+            messageId, 
+            userId,
+            readAt: new Date()
+          });
+        } catch (error) {
+          console.error('Error marking message as read:', error);
+        }
+      });
+      
+      // Handle mark all messages as read for a conversation
+      socket.on('mark-conversation-read', async ({ conversationId, senderId }) => {
+        try {
+          await prisma.message.updateMany({
+            where: {
+              conversationId,
+              receiverId: userId,
+              isRead: false
+            },
+            data: { isRead: true, readAt: new Date() }
+          });
+          socket.to(`user:${senderId}`).emit('conversation-read', { 
+            conversationId, 
+            userId 
+          });
+        } catch (error) {
+          console.error('Error marking conversation as read:', error);
+        }
+      });
+
+      // Handle disconnect
       socket.on('disconnect', () => {
         console.log(`❌ User ${userId} disconnected`);
       });
     });
 
     isInitialized = true;
-    console.log('✅ Socket.io initialized successfully');
+    console.log('✅ Socket.io initialized successfully with chat support');
     return io;
   } catch (error) {
     console.error('❌ Socket.io initialization failed:', error);
@@ -129,5 +182,27 @@ export const updateUnreadCount = async (userId: number) => {
     console.error('Error updating unread count:', error);
   } finally {
     await newPrisma.$disconnect();
+  }
+};
+
+// Chat-specific helper functions
+export const emitNewMessage = (receiverId: number, message: any) => {
+  const socket = getIO();
+  if (socket) {
+    socket.to(`user:${receiverId}`).emit('new-message', message);
+  }
+};
+
+export const emitMessageSent = (senderId: number, message: any) =>{
+  const socket = getIO();
+  if (socket) {
+    socket.to(`user:${senderId}`).emit('message-sent', message);
+  }
+};
+
+export const emitUserTyping = (receiverId: number, userId: number, isTyping: boolean) => {
+  const socket = getIO();
+  if (socket) {
+    socket.to(`user:${receiverId}`).emit('user-typing', { userId, isTyping });
   }
 };

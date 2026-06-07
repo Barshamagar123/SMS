@@ -1,14 +1,14 @@
 export default class AuthService {
     static login(email: string, password: string): Promise<{
         user: {
+            id: number;
             createdAt: Date;
             updatedAt: Date;
-            id: number;
-            name: string;
-            phone: string | null;
             isActive: boolean;
+            name: string;
             email: string;
             password: string;
+            phone: string | null;
             role: import("@prisma/client").$Enums.RoleEnum;
             status: import("@prisma/client").$Enums.UserStatus;
             isFirstLogin: boolean;
@@ -20,14 +20,14 @@ export default class AuthService {
         refreshToken: never;
     }>;
     static createAdmin(data: any, creatorId: number): Promise<{
+        id: number;
         createdAt: Date;
         updatedAt: Date;
-        id: number;
-        name: string;
-        phone: string | null;
         isActive: boolean;
+        name: string;
         email: string;
         password: string;
+        phone: string | null;
         role: import("@prisma/client").$Enums.RoleEnum;
         status: import("@prisma/client").$Enums.UserStatus;
         isFirstLogin: boolean;
@@ -151,14 +151,14 @@ export default class AuthService {
     }>;
     static getStudentById(studentId: number): Promise<({
         user: {
+            id: number;
             createdAt: Date;
             updatedAt: Date;
-            id: number;
-            name: string;
-            phone: string | null;
             isActive: boolean;
+            name: string;
             email: string;
             password: string;
+            phone: string | null;
             role: import("@prisma/client").$Enums.RoleEnum;
             status: import("@prisma/client").$Enums.UserStatus;
             isFirstLogin: boolean;
@@ -172,11 +172,13 @@ export default class AuthService {
             section: string;
         };
     } & {
+        id: number;
         createdAt: Date;
         updatedAt: Date | null;
-        id: number;
-        userId: number;
+        isActive: boolean;
+        phone: string | null;
         rollNumber: string;
+        userId: number;
         classId: number;
         dateOfBirth: Date | null;
         gender: import("@prisma/client").$Enums.Gender | null;
@@ -186,7 +188,6 @@ export default class AuthService {
         address: string | null;
         city: string | null;
         state: string | null;
-        phone: string | null;
         fatherName: string | null;
         motherName: string | null;
         parentPhone: string | null;
@@ -195,7 +196,6 @@ export default class AuthService {
         previousSchool: string | null;
         previousClass: string | null;
         profilePhoto: string | null;
-        isActive: boolean;
     }) | null>;
     static getClassById(classId: number): Promise<{
         id: number;
@@ -204,14 +204,14 @@ export default class AuthService {
     } | null>;
     static transferStudent(studentId: number, newClassId: number, reason: string | null, transferredBy: number): Promise<{
         user: {
+            id: number;
             createdAt: Date;
             updatedAt: Date;
-            id: number;
-            name: string;
-            phone: string | null;
             isActive: boolean;
+            name: string;
             email: string;
             password: string;
+            phone: string | null;
             role: import("@prisma/client").$Enums.RoleEnum;
             status: import("@prisma/client").$Enums.UserStatus;
             isFirstLogin: boolean;
@@ -225,11 +225,13 @@ export default class AuthService {
             section: string;
         };
     } & {
+        id: number;
         createdAt: Date;
         updatedAt: Date | null;
-        id: number;
-        userId: number;
+        isActive: boolean;
+        phone: string | null;
         rollNumber: string;
+        userId: number;
         classId: number;
         dateOfBirth: Date | null;
         gender: import("@prisma/client").$Enums.Gender | null;
@@ -239,7 +241,6 @@ export default class AuthService {
         address: string | null;
         city: string | null;
         state: string | null;
-        phone: string | null;
         fatherName: string | null;
         motherName: string | null;
         parentPhone: string | null;
@@ -248,17 +249,16 @@ export default class AuthService {
         previousSchool: string | null;
         previousClass: string | null;
         profilePhoto: string | null;
-        isActive: boolean;
     }>;
     static publicRegister(data: any): Promise<{
+        id: number;
         createdAt: Date;
         updatedAt: Date;
-        id: number;
-        name: string;
-        phone: string | null;
         isActive: boolean;
+        name: string;
         email: string;
         password: string;
+        phone: string | null;
         role: import("@prisma/client").$Enums.RoleEnum;
         status: import("@prisma/client").$Enums.UserStatus;
         isFirstLogin: boolean;
@@ -267,14 +267,14 @@ export default class AuthService {
         lastLoginAt: Date | null;
     }>;
     static approveOrRejectUser(userId: number, action: string): Promise<{
+        id: number;
         createdAt: Date;
         updatedAt: Date;
-        id: number;
-        name: string;
-        phone: string | null;
         isActive: boolean;
+        name: string;
         email: string;
         password: string;
+        phone: string | null;
         role: import("@prisma/client").$Enums.RoleEnum;
         status: import("@prisma/client").$Enums.UserStatus;
         isFirstLogin: boolean;
@@ -283,14 +283,14 @@ export default class AuthService {
         lastLoginAt: Date | null;
     }>;
     static getMe(userId: number): Promise<{
+        id: number;
         createdAt: Date;
         updatedAt: Date;
-        id: number;
-        name: string;
-        phone: string | null;
         isActive: boolean;
+        name: string;
         email: string;
         password: string;
+        phone: string | null;
         role: import("@prisma/client").$Enums.RoleEnum;
         status: import("@prisma/client").$Enums.UserStatus;
         isFirstLogin: boolean;
@@ -305,11 +305,13 @@ export default class AuthService {
                 section: string;
             };
         } & {
+            id: number;
             createdAt: Date;
             updatedAt: Date | null;
-            id: number;
-            userId: number;
+            isActive: boolean;
+            phone: string | null;
             rollNumber: string;
+            userId: number;
             classId: number;
             dateOfBirth: Date | null;
             gender: import("@prisma/client").$Enums.Gender | null;
@@ -319,7 +321,6 @@ export default class AuthService {
             address: string | null;
             city: string | null;
             state: string | null;
-            phone: string | null;
             fatherName: string | null;
             motherName: string | null;
             parentPhone: string | null;
@@ -328,16 +329,15 @@ export default class AuthService {
             previousSchool: string | null;
             previousClass: string | null;
             profilePhoto: string | null;
-            isActive: boolean;
         }) | null;
+        id: number;
         createdAt: Date;
         updatedAt: Date;
-        id: number;
-        name: string;
-        phone: string | null;
         isActive: boolean;
+        name: string;
         email: string;
         password: string;
+        phone: string | null;
         role: import("@prisma/client").$Enums.RoleEnum;
         status: import("@prisma/client").$Enums.UserStatus;
         isFirstLogin: boolean;
@@ -347,14 +347,14 @@ export default class AuthService {
     } | {
         teacher: ({
             user: {
+                id: number;
                 createdAt: Date;
                 updatedAt: Date;
-                id: number;
-                name: string;
-                phone: string | null;
                 isActive: boolean;
+                name: string;
                 email: string;
                 password: string;
+                phone: string | null;
                 role: import("@prisma/client").$Enums.RoleEnum;
                 status: import("@prisma/client").$Enums.UserStatus;
                 isFirstLogin: boolean;
@@ -363,27 +363,27 @@ export default class AuthService {
                 lastLoginAt: Date | null;
             };
         } & {
+            id: number;
             createdAt: Date;
             updatedAt: Date | null;
-            id: number;
+            isActive: boolean;
+            phone: string | null;
             userId: number;
             address: string | null;
-            phone: string | null;
             profilePhoto: string | null;
-            isActive: boolean;
             employeeId: string;
             qualification: string | null;
             specialization: string | null;
             hireDate: Date | null;
         }) | null;
+        id: number;
         createdAt: Date;
         updatedAt: Date;
-        id: number;
-        name: string;
-        phone: string | null;
         isActive: boolean;
+        name: string;
         email: string;
         password: string;
+        phone: string | null;
         role: import("@prisma/client").$Enums.RoleEnum;
         status: import("@prisma/client").$Enums.UserStatus;
         isFirstLogin: boolean;
@@ -395,14 +395,14 @@ export default class AuthService {
             id: number;
             userId: number;
         } | null;
+        id: number;
         createdAt: Date;
         updatedAt: Date;
-        id: number;
-        name: string;
-        phone: string | null;
         isActive: boolean;
+        name: string;
         email: string;
         password: string;
+        phone: string | null;
         role: import("@prisma/client").$Enums.RoleEnum;
         status: import("@prisma/client").$Enums.UserStatus;
         isFirstLogin: boolean;
@@ -435,14 +435,14 @@ export default class AuthService {
         } | null;
     }[]>;
     static updateUser(id: number, data: any): Promise<{
+        id: number;
         createdAt: Date;
         updatedAt: Date;
-        id: number;
-        name: string;
-        phone: string | null;
         isActive: boolean;
+        name: string;
         email: string;
         password: string;
+        phone: string | null;
         role: import("@prisma/client").$Enums.RoleEnum;
         status: import("@prisma/client").$Enums.UserStatus;
         isFirstLogin: boolean;
@@ -451,14 +451,14 @@ export default class AuthService {
         lastLoginAt: Date | null;
     }>;
     static deleteUser(id: number): Promise<{
+        id: number;
         createdAt: Date;
         updatedAt: Date;
-        id: number;
-        name: string;
-        phone: string | null;
         isActive: boolean;
+        name: string;
         email: string;
         password: string;
+        phone: string | null;
         role: import("@prisma/client").$Enums.RoleEnum;
         status: import("@prisma/client").$Enums.UserStatus;
         isFirstLogin: boolean;
@@ -476,11 +476,13 @@ export default class AuthService {
     static resetPassword(token: string, newPassword: string): Promise<void>;
     static changePassword(userId: number, currentPassword: string, newPassword: string): Promise<void>;
     static getStudentByUserId(userId: number): Promise<{
+        id: number;
         createdAt: Date;
         updatedAt: Date | null;
-        id: number;
-        userId: number;
+        isActive: boolean;
+        phone: string | null;
         rollNumber: string;
+        userId: number;
         classId: number;
         dateOfBirth: Date | null;
         gender: import("@prisma/client").$Enums.Gender | null;
@@ -490,7 +492,6 @@ export default class AuthService {
         address: string | null;
         city: string | null;
         state: string | null;
-        phone: string | null;
         fatherName: string | null;
         motherName: string | null;
         parentPhone: string | null;
@@ -499,18 +500,17 @@ export default class AuthService {
         previousSchool: string | null;
         previousClass: string | null;
         profilePhoto: string | null;
-        isActive: boolean;
     } | null>;
     static getStudentWithDetails(userId: number): Promise<({
         user: {
+            id: number;
             createdAt: Date;
             updatedAt: Date;
-            id: number;
-            name: string;
-            phone: string | null;
             isActive: boolean;
+            name: string;
             email: string;
             password: string;
+            phone: string | null;
             role: import("@prisma/client").$Enums.RoleEnum;
             status: import("@prisma/client").$Enums.UserStatus;
             isFirstLogin: boolean;
@@ -524,11 +524,13 @@ export default class AuthService {
             section: string;
         };
     } & {
+        id: number;
         createdAt: Date;
         updatedAt: Date | null;
-        id: number;
-        userId: number;
+        isActive: boolean;
+        phone: string | null;
         rollNumber: string;
+        userId: number;
         classId: number;
         dateOfBirth: Date | null;
         gender: import("@prisma/client").$Enums.Gender | null;
@@ -538,7 +540,6 @@ export default class AuthService {
         address: string | null;
         city: string | null;
         state: string | null;
-        phone: string | null;
         fatherName: string | null;
         motherName: string | null;
         parentPhone: string | null;
@@ -547,14 +548,15 @@ export default class AuthService {
         previousSchool: string | null;
         previousClass: string | null;
         profilePhoto: string | null;
-        isActive: boolean;
     }) | null>;
     static updateStudentPhoto(studentId: number, photoUrl: string | null): Promise<{
+        id: number;
         createdAt: Date;
         updatedAt: Date | null;
-        id: number;
-        userId: number;
+        isActive: boolean;
+        phone: string | null;
         rollNumber: string;
+        userId: number;
         classId: number;
         dateOfBirth: Date | null;
         gender: import("@prisma/client").$Enums.Gender | null;
@@ -564,7 +566,6 @@ export default class AuthService {
         address: string | null;
         city: string | null;
         state: string | null;
-        phone: string | null;
         fatherName: string | null;
         motherName: string | null;
         parentPhone: string | null;
@@ -573,7 +574,6 @@ export default class AuthService {
         previousSchool: string | null;
         previousClass: string | null;
         profilePhoto: string | null;
-        isActive: boolean;
     }>;
     static updateStudentProfile(userId: number, data: {
         phone?: string;
@@ -581,11 +581,13 @@ export default class AuthService {
         city?: string;
         state?: string;
     }): Promise<{
+        id: number;
         createdAt: Date;
         updatedAt: Date | null;
-        id: number;
-        userId: number;
+        isActive: boolean;
+        phone: string | null;
         rollNumber: string;
+        userId: number;
         classId: number;
         dateOfBirth: Date | null;
         gender: import("@prisma/client").$Enums.Gender | null;
@@ -595,7 +597,6 @@ export default class AuthService {
         address: string | null;
         city: string | null;
         state: string | null;
-        phone: string | null;
         fatherName: string | null;
         motherName: string | null;
         parentPhone: string | null;
@@ -604,7 +605,6 @@ export default class AuthService {
         previousSchool: string | null;
         previousClass: string | null;
         profilePhoto: string | null;
-        isActive: boolean;
     }>;
     static getAllStudentsWithDetails(): Promise<{
         id: number;
@@ -647,12 +647,12 @@ export default class AuthService {
         };
     }[]>;
     static getAllAdmins(): Promise<{
-        createdAt: Date;
         id: number;
-        name: string;
-        phone: string | null;
+        createdAt: Date;
         isActive: boolean;
+        name: string;
         email: string;
+        phone: string | null;
         status: import("@prisma/client").$Enums.UserStatus;
         isFirstLogin: boolean;
         lastLoginAt: Date | null;

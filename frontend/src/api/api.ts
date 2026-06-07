@@ -301,5 +301,26 @@ export const reportCardApi = {
   getStudentsForExam: (examId: number) => api.get(`/report-cards/exam/${examId}/students`),
   bulkDownload: (examId: number, studentIds: number[]) => api.post(`/report-cards/exam/${examId}/bulk-download`, { studentIds }, { responseType: 'blob' }),
 };
+// Add to your existing api.ts file
 
+// ==================== CHAT API ====================
+export const chatApi = {
+  getConversations: () => api.get('/chat/conversations'),
+  getMessages: (conversationId: number, limit: number = 50, offset: number = 0) => 
+    api.get(`/chat/messages/${conversationId}?limit=${limit}&offset=${offset}`),
+  sendMessage: (receiverId: number, message: string) => 
+    api.post('/chat/message', { receiverId, message }),
+  markAsRead: (messageId: number) => 
+    api.put(`/chat/message/${messageId}/read`),
+  deleteMessage: (messageId: number) => 
+    api.delete(`/chat/message/${messageId}`),
+  getUnreadCount: () => 
+    api.get('/chat/unread-count'),
+  getContacts: () => 
+    api.get('/chat/contacts'),
+  sendTyping: (receiverId: number, isTyping: boolean) => 
+    api.post('/chat/typing', { receiverId, isTyping }),
+  markConversationAsRead: (conversationId: number) => 
+    api.put(`/chat/conversation/${conversationId}/read`),
+};
 export default api;

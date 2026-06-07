@@ -19,12 +19,12 @@ export declare class AssignmentService {
             displayName: string;
         };
         subject: {
-            description: string | null;
+            id: number;
             createdAt: Date;
             updatedAt: Date;
-            id: number;
-            name: string;
             isActive: boolean;
+            name: string;
+            description: string | null;
             code: string;
         };
         academicYear: string;
@@ -45,12 +45,12 @@ export declare class AssignmentService {
             displayName: string;
         };
         subject: {
-            description: string | null;
+            id: number;
             createdAt: Date;
             updatedAt: Date;
-            id: number;
-            name: string;
             isActive: boolean;
+            name: string;
+            description: string | null;
             code: string;
         };
         academicYear: string;

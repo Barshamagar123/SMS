@@ -23,7 +23,8 @@ import {
   GraduationCap,
   Gift,
   TrendingUp,
-  Clock
+  Clock,
+   MessageCircle
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
@@ -74,6 +75,7 @@ const Sidebar: React.FC = () => {
 { path: '/teacher/assignments', label: 'Assignments', icon: BookOpen }, 
     { path: '/profile', label: 'Profile', icon: UserCircle },
             { path: '/schedule', label: 'Schedule', icon: Clock },
+{ path: '/chat', label: 'Messages', icon: MessageCircle },
 
 
   ];
@@ -88,6 +90,8 @@ const Sidebar: React.FC = () => {
 
   { path: '/student/assignments', label: 'Assignments', icon: BookOpen },  // ✅ ADD THIS
   { path: '/notifications', label: 'Notifications', icon: Bell },  
+  { path: '/chat', label: 'Messages', icon: MessageCircle },
+
   ];
 
   // Parent Menu

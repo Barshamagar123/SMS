@@ -42,6 +42,9 @@ import Notifications from './pages/Notifications';
 import TeacherAssignments from './pages/teacher/TeacherAssignments';
 import CreateAssignment from './pages/teacher/CreateAssignment';
 import SubmissionsList from './pages/teacher/SubmissionsList';
+import ChatList from './pages/chat/ChatList';
+import ChatRoom from './pages/chat/ChatRoom';
+
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
   
@@ -119,7 +122,8 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
-        
+        <Route path="/chat" element={<ChatList />} />
+        <Route path="/chat/:userId" element={<ChatRoom />} />
         {/* SuperAdmin Routes */}
         <Route
           path="/admins"

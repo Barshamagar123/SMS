@@ -30,7 +30,12 @@ model User {
   teacher        Teacher?
   otps           Otp[]
   notifications  Notification[]
-
+// ✅ ADD THESE CHAT RELATIONS
+  conversations1  Conversation[]  @relation("Participant1")
+  conversations2  Conversation[]  @relation("Participant2")
+  sentMessages    Message[]       @relation("SentMessages")
+  receivedMessages Message[]      @relation("ReceivedMessages")
+  messageStatuses MessageStatus[]
   @@index([email])
   @@map("users")
 }
@@ -547,4 +552,71 @@ model SubmissionAttachment {
   submission    AssignmentSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
   
   @@map("submission_attachments")
+}
+// ============================================
+// CHAT SYSTEM MODELS
+// ============================================
+
+model Conversation {
+  id             Int              @id @default(autoincrement())
+  participant1Id Int              @map("participant1_id")
+  participant2Id Int              @map("participant2_id")
+  lastMessage    String?          @map("last_message")
+  lastMessageAt  DateTime         @default(now()) @map("last_message_at")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  isActive       Boolean          @default(true) @map("is_active")
+  
+  participant1   User             @relation("Participant1", fields: [participant1Id], references: [id])
+  participant2   User             @relation("Participant2", fields: [participant2Id], references: [id])
+  messages       Message[]
+  
+  @@unique([participant1Id, participant2Id])
+  @@index([participant1Id])
+  @@index([participant2Id])
+  @@index([lastMessageAt])
+  @@map("conversations")
+}
+
+model Message {
+  id             Int          @id @default(autoincrement())
+  conversationId Int          @map("conversation_id")
+  senderId       Int          @map("sender_id")
+  receiverId     Int          @map("receiver_id")
+  message        String       @db.Text
+  attachmentUrl  String?      @map("attachment_url")
+  attachmentType String?      @map("attachment_type")
+  isRead         Boolean      @default(false) @map("is_read")
+  readAt         DateTime?    @map("read_at")
+  isDeleted      Boolean      @default(false) @map("is_deleted")
+  deletedFor     Int?         @map("deleted_for")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id])
+  receiver       User         @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  statuses       MessageStatus[]
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+model MessageStatus {
+  id          Int      @id @default(autoincrement())
+  messageId   Int      @map("message_id")
+  userId      Int      @map("user_id")
+  status      String   @db.VarChar(20)
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  message     Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@unique([messageId, userId])
+  @@index([messageId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("message_statuses")
 }

@@ -6,3 +6,6 @@ export declare const sendNotificationToUser: (userId: number, notification: any)
 export declare const sendNotificationToClass: (classId: number, notification: any) => void;
 export declare const sendNotificationToRole: (role: string, notification: any) => void;
 export declare const updateUnreadCount: (userId: number) => Promise<void>;
+export declare const emitNewMessage: (receiverId: number, message: any) => void;
+export declare const emitMessageSent: (senderId: number, message: any) => void;
+export declare const emitUserTyping: (receiverId: number, userId: number, isTyping: boolean) => void;

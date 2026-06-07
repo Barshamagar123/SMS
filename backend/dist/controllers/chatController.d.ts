@@ -1,0 +1,11 @@
+import { Response } from 'express';
+import { AuthenticatedRequest } from '../types/index.js';
+export declare const getConversations: (req: AuthenticatedRequest, res: Response) => Promise<void>;
+export declare const getMessages: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const sendMessage: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const markAsRead: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const deleteMessage: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const getUnreadCount: (req: AuthenticatedRequest, res: Response) => Promise<void>;
+export declare const getAvailableContacts: (req: AuthenticatedRequest, res: Response) => Promise<void>;
+export declare const sendTypingIndicator: (req: AuthenticatedRequest, res: Response) => Promise<void>;
+export declare const markConversationAsRead: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;

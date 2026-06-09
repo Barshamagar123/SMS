@@ -91,22 +91,32 @@ const CreateStudentModal: React.FC<CreateStudentModalProps> = ({ isOpen, onClose
   };
 
   const validateForm = () => {
+    // Name validation
     if (!formData.name.trim()) {
       toast.error('Please enter student name');
       return false;
     }
-    if (!formData.email.trim()) {
-      toast.error('Please enter email');
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email.trim() || !emailRegex.test(formData.email.trim())) {
+      toast.error('Please enter a valid email address');
       return false;
     }
+    
+    // Class validation
     if (!formData.classId) {
       toast.error('Please select a class');
       return false;
     }
+    
+    // Date of Birth validation
     if (!formData.dateOfBirth) {
       toast.error('Please select date of birth');
       return false;
     }
+    
+    // Parent info validation
     if (!formData.fatherName.trim()) {
       toast.error('Please enter father name');
       return false;
@@ -115,10 +125,15 @@ const CreateStudentModal: React.FC<CreateStudentModalProps> = ({ isOpen, onClose
       toast.error('Please enter mother name');
       return false;
     }
-    if (!formData.parentPhone.trim()) {
-      toast.error('Please enter parent phone');
+    
+    // Phone validation - exactly 10 digits
+    const phoneRegex = /^\d{10}$/;
+    if (!formData.parentPhone.trim() || !phoneRegex.test(formData.parentPhone.trim())) {
+      toast.error('Parent phone must be a valid 10-digit number');
       return false;
     }
+    
+    // Address validation
     if (!formData.address.trim()) {
       toast.error('Please enter address');
       return false;
@@ -131,6 +146,7 @@ const CreateStudentModal: React.FC<CreateStudentModalProps> = ({ isOpen, onClose
       toast.error('Please enter state');
       return false;
     }
+    
     return true;
   };
 
@@ -166,14 +182,13 @@ const CreateStudentModal: React.FC<CreateStudentModalProps> = ({ isOpen, onClose
         previousClass: formData.previousClass?.trim() || null
       };
 
-      console.log('Sending data:', submitData);
+      console.log('📤 Sending data to backend:', submitData);
 
-      // Use authApi.createStudent
       const response = await authApi.createStudent(submitData);
-      console.log('Response:', response.data);
+      
+      console.log('📥 Response from backend:', response.data);
 
       if (response.data.success) {
-        // Store password data
         setPasswordData({
           email: formData.email,
           password: response.data.data.defaultPassword,
@@ -181,7 +196,6 @@ const CreateStudentModal: React.FC<CreateStudentModalProps> = ({ isOpen, onClose
           rollNumber: response.data.data.rollNumber
         });
         
-        // Show password modal
         setShowPasswordModal(true);
         
         // Reset form
@@ -207,16 +221,25 @@ const CreateStudentModal: React.FC<CreateStudentModalProps> = ({ isOpen, onClose
           previousClass: ''
         });
         
-        // Refresh student list
         onSuccess();
         toast.success('Student created successfully!');
       } else {
-        setError(response.data.message || 'Failed to create student');
-        toast.error(response.data.message || 'Failed to create student');
+        throw new Error(response.data.message || 'Failed to create student');
       }
     } catch (error: any) {
-      console.error('Error details:', error);
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to create student';
+      console.error('❌ Full error:', error);
+      console.error('❌ Error response:', error.response?.data);
+      
+      let errorMsg = 'Failed to create student';
+      
+      if (error.response?.data?.message) {
+        errorMsg = error.response.data.message;
+      } else if (error.response?.data?.errors) {
+        errorMsg = error.response.data.errors.map((e: any) => `${e.field}: ${e.message}`).join(', ');
+      } else if (error.message) {
+        errorMsg = error.message;
+      }
+      
       setError(errorMsg);
       toast.error(errorMsg);
     } finally {
@@ -306,6 +329,7 @@ const CreateStudentModal: React.FC<CreateStudentModalProps> = ({ isOpen, onClose
                       value={formData.name}
                       onChange={handleChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      required
                     />
                   </div>
                   <div>
@@ -316,6 +340,7 @@ const CreateStudentModal: React.FC<CreateStudentModalProps> = ({ isOpen, onClose
                       value={formData.email}
                       onChange={handleChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      required
                     />
                   </div>
                   <div>
@@ -325,6 +350,7 @@ const CreateStudentModal: React.FC<CreateStudentModalProps> = ({ isOpen, onClose
                       value={formData.classId}
                       onChange={handleChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      required
                     >
                       <option value="">Select Class</option>
                       {classes.map((cls) => (
@@ -342,6 +368,7 @@ const CreateStudentModal: React.FC<CreateStudentModalProps> = ({ isOpen, onClose
                       value={formData.dateOfBirth}
                       onChange={handleChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      required
                     />
                   </div>
                   <div>
@@ -351,6 +378,7 @@ const CreateStudentModal: React.FC<CreateStudentModalProps> = ({ isOpen, onClose
                       value={formData.gender}
                       onChange={handleChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      required
                     >
                       <option value="MALE">Male</option>
                       <option value="FEMALE">Female</option>
@@ -394,6 +422,7 @@ const CreateStudentModal: React.FC<CreateStudentModalProps> = ({ isOpen, onClose
                       value={formData.fatherName}
                       onChange={handleChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      required
                     />
                   </div>
                   <div>
@@ -404,6 +433,7 @@ const CreateStudentModal: React.FC<CreateStudentModalProps> = ({ isOpen, onClose
                       value={formData.motherName}
                       onChange={handleChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      required
                     />
                   </div>
                   <div>
@@ -413,7 +443,9 @@ const CreateStudentModal: React.FC<CreateStudentModalProps> = ({ isOpen, onClose
                       name="parentPhone"
                       value={formData.parentPhone}
                       onChange={handleChange}
+                      placeholder="10-digit mobile number"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      required
                     />
                   </div>
                   <div>
@@ -444,6 +476,7 @@ const CreateStudentModal: React.FC<CreateStudentModalProps> = ({ isOpen, onClose
                       onChange={handleChange}
                       rows={2}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                      required
                     />
                   </div>
                   <div>
@@ -454,6 +487,7 @@ const CreateStudentModal: React.FC<CreateStudentModalProps> = ({ isOpen, onClose
                       value={formData.city}
                       onChange={handleChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      required
                     />
                   </div>
                   <div>
@@ -464,6 +498,7 @@ const CreateStudentModal: React.FC<CreateStudentModalProps> = ({ isOpen, onClose
                       value={formData.state}
                       onChange={handleChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      required
                     />
                   </div>
                   <div>

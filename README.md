@@ -8,9 +8,7 @@
 
 - [🌟 Key Features](#-key-features)
 - [🛠️ Tech Stack](#️-tech-stack)
-- [📁 Project Structure](#-project-structure)
 - [🚀 Getting Started](#-getting-started)
-- [📊 Database Schema](#-database-schema)
 - [🔌 API Endpoints](#-api-endpoints)
 - [🎯 Roadmap](#-roadmap)
 - [🤝 Contributing](#-contributing)

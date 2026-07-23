@@ -1,4 +1,5 @@
-EduManage 🏫
+#EduManage 🏫
+
 Complete School Management System
 EduManage is a comprehensive, production-ready School Management System designed to streamline administrative tasks, enhance communication, and improve academic management. Built with modern web technologies, it serves as a complete solution for educational institutions.
 

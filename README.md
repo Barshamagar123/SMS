@@ -1,133 +1,163 @@
-#EduManage 🏫
+# 🏫 EduManage - Complete School Management System
 
-Complete School Management System
-EduManage is a comprehensive, production-ready School Management System designed to streamline administrative tasks, enhance communication, and improve academic management. Built with modern web technologies, it serves as a complete solution for educational institutions.
+> **A production-ready, full-featured School Management System** built with modern web technologies. Streamline administrative tasks, enhance communication, and improve academic management.
 
-🌟 Key Features
-🔐 Multi-Role Authentication
-Secure Access: JWT-based authentication with role-based access control (RBAC)
+---
 
-Five User Roles:
+## 📋 Table of Contents
 
-SuperAdmin: Full system control, manages admins, system settings
+- [🌟 Key Features](#-key-features)
+- [🛠️ Tech Stack](#️-tech-stack)
+- [📁 Project Structure](#-project-structure)
+- [🚀 Getting Started](#-getting-started)
+- [📊 Database Schema](#-database-schema)
+- [🔌 API Endpoints](#-api-endpoints)
+- [🎯 Roadmap](#-roadmap)
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
 
-Admin: Manages students, teachers, classes, exams, and reports
+---
 
-Teacher: Manages classes, attendance, marks, assignments, and schedule
+## 🌟 Key Features
 
-Student: Views attendance, results, assignments, and communicates with teachers
+### 🔐 Multi-Role Authentication
 
-Parent: Views child's attendance, results, fees, and progress
+**Secure Access:** JWT-based authentication with role-based access control (RBAC)
 
-👨‍🎓 Student Management
-Comprehensive Registration: Student enrollment with detailed personal and academic information
+**Five User Roles:**
 
-Class Transfer: Seamlessly transfer students between classes and sections
+| Role | Permissions |
+|------|-------------|
+| **SuperAdmin** | Full system control, manages admins, system settings |
+| **Admin** | Manages students, teachers, classes, exams, and reports |
+| **Teacher** | Manages classes, attendance, marks, assignments, and schedule |
+| **Student** | Views attendance, results, assignments, and communicates with teachers |
+| **Parent** | Views child's attendance, results, fees, and progress |
 
-Student Profile: Complete student profiles with photo upload and parent/guardian details
+---
 
-Academic History: Track student's academic journey across academic years
+### 👨‍🎓 Student Management
 
-👨‍🏫 Teacher Management
-Teacher Registration: Complete teacher profiles with qualifications and specialization
+| Feature | Description |
+|---------|-------------|
+| **Comprehensive Registration** | Student enrollment with detailed personal and academic information |
+| **Class Transfer** | Seamlessly transfer students between classes and sections |
+| **Student Profile** | Complete student profiles with photo upload and parent/guardian details |
+| **Academic History** | Track student's academic journey across academic years |
 
-Subject Assignment: Assign teachers to multiple subjects and classes
+---
 
-Schedule Management: Teachers can view and manage their class schedules
+### 👨‍🏫 Teacher Management
 
-Performance Tracking: Track teacher's performance and class results
+| Feature | Description |
+|---------|-------------|
+| **Teacher Registration** | Complete teacher profiles with qualifications and specialization |
+| **Subject Assignment** | Assign teachers to multiple subjects and classes |
+| **Schedule Management** | Teachers can view and manage their class schedules |
+| **Performance Tracking** | Track teacher's performance and class results |
 
-📊 Academic Management
-Class & Subject Management: Create, update, delete classes and subjects
+---
 
-Teacher Assignment: Assign teachers to subjects and classes with academic year support
+### 📊 Academic Management
 
-Attendance Tracking: Mark daily attendance with Present/Absent/Late/Excused status
+| Feature | Description |
+|---------|-------------|
+| **Class & Subject Management** | Create, update, delete classes and subjects |
+| **Teacher Assignment** | Assign teachers to subjects and classes with academic year support |
+| **Attendance Tracking** | Mark daily attendance with Present/Absent/Late/Excused status |
+| **Attendance Reports** | Generate monthly and yearly attendance reports with PDF export |
+| **Exam & Results** | Create exams, enter marks, generate results with grade calculation |
+| **Grade System** | Auto-assign grades based on percentage (A+, A, B+, B, C+, C, D, F) |
+| **Report Cards** | Generate and download PDF report cards with full subject-wise breakdown |
 
-Attendance Reports: Generate monthly and yearly attendance reports with PDF export
+---
 
-Exam & Results: Create exams, enter marks, generate results with grade calculation
+### 📝 Assignment Management
 
-Grade System: Auto-assign grades based on percentage (A+, A, B+, B, C+, C, D, F)
+| Feature | Description |
+|---------|-------------|
+| **Create Assignments** | Teachers can create assignments with file attachments |
+| **Student Submissions** | Students can submit assignments with files |
+| **Grading System** | Teachers can grade submissions with marks and feedback |
+| **Status Tracking** | Track assignment status (Pending, Submitted, Graded, Late) |
+| **File Upload** | Support for multiple file formats (PDF, DOC, DOCX, JPG, PNG) |
 
-Report Cards: Generate and download PDF report cards with full subject-wise breakdown
+---
 
-📝 Assignment Management
-Create Assignments: Teachers can create assignments with file attachments
+### 💬 Communication System
 
-Student Submissions: Students can submit assignments with files
+| Feature | Description |
+|---------|-------------|
+| **Real-time Chat** | Student-Teacher messaging with WebSocket support |
+| **Real-time Notifications** | Instant alerts for assignments, holidays, and exam results |
+| **Typing Indicators** | See when someone is typing in chat |
+| **Read Receipts** | Know when messages are read |
+| **Unread Badges** | Visual indicators for unread messages and notifications |
 
-Grading System: Teachers can grade submissions with marks and feedback
+---
 
-Status Tracking: Track assignment status (Pending, Submitted, Graded, Late)
+### 📈 Reports & Analytics
 
-File Upload: Support for multiple file formats (PDF, DOC, DOCX, JPG, PNG)
+| Feature | Description |
+|---------|-------------|
+| **Report Cards** | Complete academic report cards with GPA calculation |
+| **Attendance Reports** | Monthly and yearly attendance summaries |
+| **Exam Analytics** | Average marks, highest, lowest, pass percentage |
+| **Performance Tracking** | Subject-wise and overall performance analysis |
 
-💬 Communication System
-Real-time Chat: Student-Teacher messaging with WebSocket support
+---
 
-Real-time Notifications: Instant alerts for assignments, holidays, and exam results
+### 🏖️ Additional Features
 
-Typing Indicators: See when someone is typing in chat
+| Feature | Description |
+|---------|-------------|
+| **Holiday Management** | Add and manage school holidays with real-time notifications |
+| **Academic Year Management** | Manage multiple academic years |
+| **Timetable Management** | Class and teacher schedules |
+| **Student Profile Photos** | Upload and manage profile pictures |
+| **Teacher Profile Photos** | Upload and manage teacher pictures |
 
-Read Receipts: Know when messages are read
+---
 
-Unread Badges: Visual indicators for unread messages and notifications
+## 🛠️ Tech Stack
 
-📈 Reports & Analytics
-Report Cards: Complete academic report cards with GPA calculation
+### 🎨 Frontend
 
-Attendance Reports: Monthly and yearly attendance summaries
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| **React** | 19.x | UI Framework |
+| **TypeScript** | 5.x | Type-safe JavaScript |
+| **Vite** | 5.x | Build Tool & Dev Server |
+| **Tailwind CSS** | 4.x | Utility-first CSS |
+| **React Router** | 6.x | Navigation & Routing |
+| **Socket.io-client** | 4.x | Real-time WebSocket |
+| **Axios** | 1.x | HTTP Client |
+| **Lucide React** | 0.x | Icon Library |
+| **React Hot Toast** | 2.x | Toast Notifications |
+| **html2canvas** | 1.x | PDF Generation |
+| **jsPDF** | 2.x | PDF Generation |
 
-Exam Analytics: Average marks, highest, lowest, pass percentage
+### ⚙️ Backend
 
-Performance Tracking: Subject-wise and overall performance analysis
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| **Node.js** | 20.x | Runtime Environment |
+| **Express.js** | 4.x | Web Framework |
+| **TypeScript** | 5.x | Type-safe JavaScript |
+| **Prisma** | 5.x | ORM & Database Management |
+| **MySQL** | 8.x | Relational Database |
+| **Socket.io** | 4.x | Real-time WebSocket |
+| **JWT** | 9.x | Authentication |
+| **bcryptjs** | 2.x | Password Hashing |
+| **Multer** | 1.x | File Upload |
+| **PDFKit** | 0.x | PDF Generation |
 
-🏖️ Additional Features
-Holiday Management: Add and manage school holidays with real-time notifications
+### 🚀 DevOps
 
-Academic Year Management: Manage multiple academic years
-
-Timetable Management: Class and teacher schedules
-
-Student Profile Photos: Upload and manage profile pictures
-
-Teacher Profile Photos: Upload and manage teacher pictures
-
-🛠️ Tech Stack
-Frontend
-Technology	Version	Purpose
-React	19.x	UI Framework
-TypeScript	5.x	Type-safe JavaScript
-Vite	5.x	Build Tool & Dev Server
-Tailwind CSS	4.x	Utility-first CSS
-React Router	6.x	Navigation & Routing
-Socket.io-client	4.x	Real-time WebSocket
-Axios	1.x	HTTP Client
-Lucide React	0.x	Icon Library
-React Hot Toast	2.x	Toast Notifications
-html2canvas	1.x	PDF Generation
-jsPDF	2.x	PDF Generation
-Backend
-Technology	Version	Purpose
-Node.js	20.x	Runtime Environment
-Express.js	4.x	Web Framework
-TypeScript	5.x	Type-safe JavaScript
-Prisma	5.x	ORM & Database Management
-MySQL	8.x	Relational Database
-Socket.io	4.x	Real-time WebSocket
-JWT	9.x	Authentication
-bcryptjs	2.x	Password Hashing
-Multer	1.x	File Upload
-PDFKit	0.x	PDF Generation
-DevOps
-Version Control: Git & GitHub
-
-CI/CD: GitHub Actions (Optional)
-
-Deployment: Vercel (Frontend), Render/Railway (Backend)
-
-Database: MySQL on Railway/Render
+| Tool | Purpose |
+|------|---------|
+| **Git & GitHub** | Version Control |
+| **GitHub Actions** | CI/CD 
 
 🎯 Roadmap
 Phase 1: ✅ Completed
@@ -168,12 +198,14 @@ Push to the branch (git push origin feature/AmazingFeature)
 Open a Pull Request
 
 Contribution Guidelines
-Follow the existing code style
+✅ Follow the existing code style
 
-Write meaningful commit messages
+✅ Write meaningful commit messages
 
-Add tests for new features
+✅ Add tests for new features
 
-Update documentation for API changes
+✅ Update documentation for API changes
 
-Ensure TypeScript strict mode compliance
+✅ Ensure TypeScript strict mode compliance
+
+
